@@ -1,4 +1,4 @@
-import 'package:e_tantana/core/utils/typedef/typedefs.dart';
+import '../core/utils/typedef/typedefs.dart';
 import '../../domain/entity/{{name}}_entity.dart';
 
 class {{name}}Model extends {{name}}Entity {

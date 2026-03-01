@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:e_tantana/core/error/failures.dart';
+import '../core/error/failures.dart';
 import '../../domain/entity/{{name}}_entity.dart';
 
 enum {{name}}Action { idle, insert, delete, search, loadMore }

@@ -22,10 +22,10 @@ class InjectionHelper {
     final snakeName = featureName;
 
     final imports = """
-import 'package:e_tantana/features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
-import 'package:e_tantana/features/$snakeName/data/source/${snakeName}_remote_source.dart';
-import 'package:e_tantana/features/$snakeName/domain/repository/${snakeName}_repository.dart';
-import 'package:e_tantana/features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
+import '../features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
+import '../features/$snakeName/data/source/${snakeName}_remote_source.dart';
+import '../features/$snakeName/domain/repository/${snakeName}_repository.dart';
+import '../features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
 // [IMPORT_ANCHOR]""";
 
     final initCall = "  _init$capitalizedName();\n  // [INIT_ANCHOR]";

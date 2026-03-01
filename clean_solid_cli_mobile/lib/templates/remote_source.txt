@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:e_tantana/core/error/exceptions.dart';
+import '../core/error/exceptions.dart';
 import '../model/{{name}}_model.dart';
 import '../../domain/entity/{{name}}_entity.dart';
 

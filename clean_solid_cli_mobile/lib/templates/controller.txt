@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:e_tantana/core/di/injection_container.dart';
+import '../core/di/injection_container.dart';
 import '../../domain/usecases/{{name}}_usecases.dart';
 import '../states/{{name}}_states.dart';
 
