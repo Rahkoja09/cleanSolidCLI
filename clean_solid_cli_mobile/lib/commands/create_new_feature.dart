@@ -4,8 +4,7 @@ import 'package:clean_solid_cli_mobile/architectures/clean/layers/clean_layers.d
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/utils/file_helper.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
-import 'package:clean_solid_cli_mobile/utils/injection_helper.dart'; // Importe ton helper ici
-// ... tes autres imports
+import 'package:clean_solid_cli_mobile/utils/injection_helper.dart';
 
 class CreateNewFeature extends Command {
   @override
@@ -30,7 +29,7 @@ class CreateNewFeature extends Command {
       featureName: featureName,
     );
 
-    print("🛠️  Génération de la feature : $capitalizedName...");
+    print(" Génération de la feature : $capitalizedName...");
 
     for (var type in FileTemplateType.values) {
       if (type == FileTemplateType.di) continue;

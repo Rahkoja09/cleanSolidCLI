@@ -1,4 +1,4 @@
-import 'package:clean_solid_cli_mobile/templates/architectures/clean/layers/clean_layers.dart';
+import 'package:clean_solid_cli_mobile/architectures/clean/layers/clean_layers.dart';
 
 class Architectures {
   final String name;
