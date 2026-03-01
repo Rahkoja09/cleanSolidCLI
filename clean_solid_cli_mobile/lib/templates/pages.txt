@@ -1,0 +1,71 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../controller/{{name}}_controller.dart';
+import '../states/{{name}}_states.dart';
+
+class {{name}}Page extends ConsumerStatefulWidget {
+  const {{name}}Page({super.key});
+
+  @override
+  ConsumerState<{{name}}Page> createState() => _{{name}}PageState();
+}
+
+class _{{name}}PageState extends ConsumerState<{{name}}Page> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    
+    // Chargement initial
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read({{name}}ControllerProvider.notifier).fetchItems();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
+      ref.read({{name}}ControllerProvider.notifier).loadNextPage();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch({{name}}ControllerProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("{{name}}"),
+      ),
+      body: state.isLoading && (state.items?.isEmpty ?? true)
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              controller: _scrollController,
+              itemCount: (state.items?.length ?? 0) + (state.isLoading ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index < (state.items?.length ?? 0)) {
+                  final item = state.items![index];
+                  return ListTile(
+                    title: Text(item.id ?? "No ID"),
+                    subtitle: Text(item.createdAt?.toString() ?? ""),
+                  );
+                } else {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+              },
+            ),
+    );
+  }
+}
