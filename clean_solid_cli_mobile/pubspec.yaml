@@ -1,14 +1,13 @@
 name: clean_solid_cli_mobile
-description: A sample command-line application.
+description: CLI tool for Clean Architecture + solid principle scaffolding.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
 
 environment:
   sdk: ^3.7.0
 
-# Add regular dependencies here.
 dependencies:
   path: ^1.8.0
+  args: ^2.5.0
 
 dev_dependencies:
   lints: ^5.0.0
