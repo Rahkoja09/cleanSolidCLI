@@ -1,0 +1,23 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:e_tantana/core/di/injection_container.dart';
+import '../../domain/usecases/{{name}}_usecases.dart';
+import '../states/{{name}}_states.dart';
+
+class {{name}}Controller extends StateNotifier<{{name}}States> {
+  final {{name}}Usecases _usecases;
+
+  {{name}}Controller(this._usecases) : super({{name}}States());
+
+  Future<void> fetchItems() async {
+    state = state.copyWith(isLoading: true, action: {{name}}Action.search);
+    final res = await _usecases.search{{name}}(null);
+    res.fold(
+      (l) => state = state.copyWith(isLoading: false, error: l),
+      (r) => state = state.copyWith(isLoading: false, items: r),
+    );
+  }
+}
+
+final {{name}}ControllerProvider = StateNotifierProvider<{{name}}Controller, {{name}}States>((ref) {
+  return {{name}}Controller(sl<{{name}}Usecases>());
+});

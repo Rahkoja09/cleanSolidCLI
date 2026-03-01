@@ -1,0 +1,43 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:e_tantana/core/error/exceptions.dart';
+import '../model/{{name}}_model.dart';
+import '../../domain/entity/{{name}}_entity.dart';
+
+abstract class {{name}}RemoteSource {
+  Future<{{name}}Model> insert{{name}}({{name}}Entity entity);
+  Future<List<{{name}}Model>> search{{name}}({{name}}Entity? criteria, {int start = 0, int end = 9});
+  Future<void> delete{{name}}ById(String id);
+}
+
+class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
+  final SupabaseClient _client;
+  {{name}}RemoteSourceImpl(this._client);
+
+  @override
+  Future<{{name}}Model> insert{{name}}({{name}}Entity entity) async {
+    try {
+      final model = {{name}}Model.fromEntity(entity);
+      final data = await _client.from("{{name}}s").insert(model.toMap()).select().single();
+      return {{name}}Model.fromMap(data);
+    } on PostgrestException catch (e) {
+      throw ApiException(message: e.message, code: e.code ?? "000");
+    } catch (e) {
+      throw UnexceptedException(message: "$e");
+    }
+  }
+
+  @override
+  Future<List<{{name}}Model>> search{{name}}({{name}}Entity? criteria, {int start = 0, int end = 9}) async {
+    try {
+      final res = await _client.from("{{name}}s").select("*").range(start, end);
+      return (res as List).map((data) => {{name}}Model.fromMap(data)).toList();
+    } catch (e) {
+      throw UnexceptedException(message: "$e");
+    }
+  }
+
+  @override
+  Future<void> delete{{name}}ById(String id) async {
+     await _client.from("{{name}}s").delete().eq("id", id);
+  }
+}

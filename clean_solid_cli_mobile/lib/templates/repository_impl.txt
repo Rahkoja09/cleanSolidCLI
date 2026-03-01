@@ -1,0 +1,34 @@
+import 'package:dartz/dartz.dart';
+import 'package:e_tantana/core/error/exceptions.dart';
+import 'package:e_tantana/core/error/failures.dart';
+import 'package:e_tantana/core/network/network_info.dart';
+import 'package:e_tantana/core/utils/typedef/typedefs.dart';
+import '../source/{{name}}_remote_source.dart';
+import '../../domain/entity/{{name}}_entity.dart';
+import '../../domain/repository/{{name}}_repository.dart';
+
+class {{name}}RepositoryImpl implements {{name}}Repository {
+  final {{name}}RemoteSource _remoteSource;
+  final NetworkInfo _networkInfo;
+
+  {{name}}RepositoryImpl(this._remoteSource, this._networkInfo);
+
+  @override
+  ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity) async {
+    return await _executeAction(() => _remoteSource.insert{{name}}(entity));
+  }
+
+  ResultFuture<T> _executeAction<T>(Future<T> Function() action) async {
+    if (await _networkInfo.isConnected) {
+      try {
+        final res = await action();
+        return Right(res);
+      } on ApiException catch (e) {
+        return Left(ApiFailure.fromException(e));
+      } catch (e) {
+        return Left(UnexceptedFailure(e.toString(), "500"));
+      }
+    }
+    return const Left(NetworkFailure("Pas de connexion", "Net_01"));
+  }
+}

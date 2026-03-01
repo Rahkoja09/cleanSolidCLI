@@ -1,0 +1,31 @@
+import 'package:equatable/equatable.dart';
+import 'package:e_tantana/core/error/failures.dart';
+import '../../domain/entity/{{name}}_entity.dart';
+
+enum {{name}}Action { idle, insert, delete, search, loadMore }
+
+class {{name}}States extends Equatable {
+  final bool isLoading;
+  final List<{{name}}Entity>? items;
+  final Failure? error;
+  final {{name}}Action action;
+
+  {{name}}States({
+    this.isLoading = false,
+    this.items,
+    this.error,
+    this.action = {{name}}Action.idle,
+  });
+
+  {{name}}States copyWith({bool? isLoading, List<{{name}}Entity>? items, Failure? error, {{name}}Action? action}) {
+    return {{name}}States(
+      isLoading: isLoading ?? this.isLoading,
+      items: items ?? this.items,
+      error: error,
+      action: action ?? this.action,
+    );
+  }
+
+  @override
+  List<Object?> get props => [isLoading, items, error, action];
+}

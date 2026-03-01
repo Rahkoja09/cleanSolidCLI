@@ -1,0 +1,10 @@
+import 'package:e_tantana/core/utils/typedef/typedefs.dart';
+import '../entity/{{name}}_entity.dart';
+
+abstract class {{name}}Repository {
+  /// Insère un nouveau {{name}}
+  ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity);
+
+  /// Sélectionne un {{name}} spécifique
+  ResultFuture<{{name}}Entity> select{{name}}ById(String id);
+}

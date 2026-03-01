@@ -1,0 +1,32 @@
+import 'package:e_tantana/core/utils/typedef/typedefs.dart';
+import '../entity/{{name}}_entity.dart';
+import '../repository/{{name}}_repository.dart';
+
+class {{name}}Usecases {
+  final {{name}}Repository _repo;
+  {{name}}Usecases(this._repo);
+
+  ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity) async {
+    return await _repo.insert{{name}}(entity);
+  }
+
+  ResultFuture<{{name}}Entity> update{{name}}ByI({{name}}Entity updates) async {
+    return await _repo.update{{name}}ByI(updates);
+  }
+
+  ResultVoid delete{{name}}ById(String id) async {
+    return await _repo.delete{{name}}ById(id);
+  }
+
+  ResultFuture<List<{{name}}Entity>> search{{name}}(
+    {{name}}Entity criteria, {
+    int start = 0,
+    int end = 9,
+  }) async {
+    return await _repo.search{{name}}(criteria, end: end, start: start);
+  }
+
+  ResultFuture<{{name}}Entity> select{{name}}ById(String id) async {
+    return await _repo.select{{name}}ById(id);
+  }
+}

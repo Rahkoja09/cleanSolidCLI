@@ -31,7 +31,7 @@ class FileHelper {
     file.writeAsStringSync(content);
   }
 
-  static void generateTargePathAndHaveFileName({
+  static String generateAndGetTargetPath({
     required String featureName,
     required FileTemplateType temaplateType,
     required Architectures architecture,
@@ -68,32 +68,47 @@ class FileHelper {
       case FileTemplateType.states:
         directoryPath =
             "lib/features/$featureName/${architecture.getLayers.getPresentationName}/states";
+        fileName = "${featureName}_states.dart";
         break;
       case FileTemplateType.repository:
         directoryPath =
             "lib/features/$featureName/${architecture.getLayers.getDomainName}/repository";
+        fileName = "${featureName}_repository.dart";
         break;
       case FileTemplateType.repositoryImpl:
         directoryPath =
             "lib/features/$featureName/${architecture.getLayers.getDataName}/repository";
+        fileName = "${featureName}_repository_impl.dart";
         break;
       case FileTemplateType.pages:
         directoryPath =
             "lib/features/$featureName/${architecture.getLayers.getPresentationName}/pages";
+        fileName = "$featureName.dart";
         break;
       case FileTemplateType.widgets:
         directoryPath =
             "lib/features/$featureName/${architecture.getLayers.getPresentationName}/widgets";
+        fileName = "widgets.dart";
         break;
       case FileTemplateType.di:
         directoryPath = "lib/core/di";
+        fileName = "dependancy_injection.dart";
         break;
       case FileTemplateType.entity:
         directoryPath =
             "lib/features/$featureName/${architecture.getLayers.getDomainName}/entity";
+        fileName = "${featureName}entity.dart";
         break;
     }
+
     final directory = Directory(directoryPath);
-    directory.createSync(recursive: true);
+    if (directory.existsSync()) {
+      print("Le chemin existe déjà!");
+      return "$directory/$fileName";
+    } else {
+      directory.createSync(recursive: true);
+    }
+
+    return "$directory/$fileName";
   }
 }
