@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:clean_solid_cli_mobile/architectures/architectures.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
@@ -12,19 +13,23 @@ class FileHelper {
     required String featureName,
     required String templateName,
     required String targetPath,
-  }) {
-    final scriptPath = Platform.script.toFilePath();
-    final templateDir = p.join(
-      p.dirname(p.dirname(scriptPath)),
-      'lib',
-      'templates',
+  }) async {
+    final packageUri = Uri.parse(
+      'package:clean_solid_cli_mobile/templates/$templateName.txt',
     );
-    final templateFile = File(p.join(templateDir, "$templateName.txt"));
+    final resolvedUri = await Isolate.resolvePackageUri(packageUri);
+
+    if (resolvedUri == null) {
+      print(
+        "Impossible de localiser le package pour le template $templateName",
+      );
+      return;
+    }
+
+    final templateFile = File(resolvedUri.toFilePath());
 
     if (!templateFile.existsSync()) {
-      print(
-        " Le template nommé $templateName n'existe pas à l'adresse ${templateFile.path}",
-      );
+      print("Le template n'existe pas à : ${templateFile.path}");
       return;
     }
 
