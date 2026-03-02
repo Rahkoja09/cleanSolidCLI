@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../core/error/exceptions.dart';
-import '../model/{{name}}_model.dart';
-import '../../domain/entity/{{name}}_entity.dart';
+import 'package:{{projectName}}/core/error/exceptions.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/data/model/{{snakeName}}_model.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
 
 abstract class {{name}}RemoteSource {
   Future<{{name}}Model> insert{{name}}({{name}}Entity entity);

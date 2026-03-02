@@ -1,5 +1,5 @@
-import '../core/utils/typedef/typedefs.dart';
-import '../entity/{{name}}_entity.dart';
+import 'package:{{projectName}}/core/utils/typedef/typedefs.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
 
 abstract class {{name}}Repository {
   /// Insère un nouveau {{name}}

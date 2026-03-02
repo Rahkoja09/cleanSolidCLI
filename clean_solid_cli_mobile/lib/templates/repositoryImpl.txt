@@ -1,11 +1,11 @@
 import 'package:dartz/dartz.dart';
-import '../core/error/exceptions.dart';
-import '../core/error/failures.dart';
-import '../core/network/network_info.dart';
-import '../core/utils/typedef/typedefs.dart';
-import '../source/{{name}}_remote_source.dart';
-import '../../domain/entity/{{name}}_entity.dart';
-import '../../domain/repository/{{name}}_repository.dart';
+import 'package:{{projectName}}/core/error/exceptions.dart';
+import 'package:{{projectName}}/core/error/failures.dart';
+import 'package:{{projectName}}/core/network/network_info.dart';
+import 'package:{{projectName}}/core/utils/typedef/typedefs.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/data/source/{{snakeName}}_remote_source.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/repository/{{snakeName}}_repository.dart';
 
 class {{name}}RepositoryImpl implements {{name}}Repository {
   final {{name}}RemoteSource _remoteSource;

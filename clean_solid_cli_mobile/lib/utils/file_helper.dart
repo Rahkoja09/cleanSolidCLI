@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:clean_solid_cli_mobile/architectures/architectures.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
+import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:clean_solid_cli_mobile/utils/join_path.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:path/path.dart' as p;
@@ -29,11 +30,15 @@ class FileHelper {
 
     String content = templateFile.readAsStringSync();
 
+    final projectName = GetProjetItem.getProjectName();
     final capitalizedClassName = ReformateClassName.capitalizeClassName(
       featureName: featureName,
     );
+    final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
 
+    content = content.replaceAll("{{projectName}}", projectName);
     content = content.replaceAll("{{name}}", capitalizedClassName);
+    content = content.replaceAll("{{snakeName}}", snakeFeatureName);
 
     final file = File(targetPath);
 
@@ -57,8 +62,7 @@ class FileHelper {
     String fileName;
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
     final defaultFeaturePath = p.join("lib", "features");
-
-    final String featureRoot = "$defaultFeaturePath$snakeFeatureName";
+    final String featureRoot = p.join(defaultFeaturePath, snakeFeatureName);
 
     switch (templateType) {
       case FileTemplateType.localSource:
@@ -139,7 +143,7 @@ class FileHelper {
           architecture.getLayers.getPresentationName,
           "pages",
         ]);
-        fileName = "${snakeFeatureName}_page.dart"; // Plus clair avec _page
+        fileName = "${snakeFeatureName}_page.dart";
         break;
 
       case FileTemplateType.widgets:

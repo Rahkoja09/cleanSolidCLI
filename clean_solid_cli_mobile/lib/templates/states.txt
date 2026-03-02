@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import '../core/error/failures.dart';
-import '../../domain/entity/{{name}}_entity.dart';
+import 'package:{{projectName}}/core/error/failures.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
 
 enum {{name}}Action { idle, insert, delete, search, loadMore }
 

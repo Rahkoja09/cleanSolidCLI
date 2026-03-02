@@ -1,6 +1,6 @@
-import '../core/utils/typedef/typedefs.dart';
-import '../entity/{{name}}_entity.dart';
-import '../repository/{{name}}_repository.dart';
+import 'package:{{projectName}}/core/utils/typedef/typedefs.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/repository/{{snakeName}}_repository.dart';
 
 class {{name}}Usecases {
   final {{name}}Repository _repo;

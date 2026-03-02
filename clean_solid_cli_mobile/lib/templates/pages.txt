@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../controller/{{name}}_controller.dart';
-import '../states/{{name}}_states.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/presentation/controller/{{snakeName}}_controller.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/presentation/states/{{snakeName}}_states.dart';
 
 class {{name}}Page extends ConsumerStatefulWidget {
   const {{name}}Page({super.key});
