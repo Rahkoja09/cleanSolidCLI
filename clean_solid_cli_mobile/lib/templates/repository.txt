@@ -6,11 +6,11 @@ abstract class {{name}}Repository {
   ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity);
 
   // recherche un/des {{name}}(s) ------
-  ResultFuture<{{name}}Entity> search{{name}}({{name}}Entity criteria , {
+  ResultFuture<List<{{name}}Entity>> search{{name}}({{name}}Entity criteria , {
     int start = 0,
     int end = 9,
   });
 
   /// Sélectionne un {{name}} spécifique -------
-  ResultFuture<{{name}}Entity> delete{{name}}ById(String id);
+  ResultVoid delete{{name}}ById(String id);
 }

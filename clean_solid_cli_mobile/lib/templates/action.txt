@@ -49,7 +49,7 @@ class Delete{{name}}Action extends {{name}}Actions {
 }
 
 /// Action to fetch the list of {{name}}
-class Get{{name}}sAction extends {{name}}Actions {
+class Get{{name}}Action extends {{name}}Actions {
   @override
   String get errorMessage => "Erreur lors du chargement de la liste";
 

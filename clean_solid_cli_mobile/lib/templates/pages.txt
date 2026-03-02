@@ -21,7 +21,7 @@ class _{{name}}PageState extends ConsumerState<{{name}}Page> {
     
     // Chargement initial
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read({{name}}ControllerProvider.notifier).fetchItems();
+      ref.read({{snakeName}}ControllerProvider.notifier).search{{name}}(null);
     });
   }
 
@@ -34,26 +34,26 @@ class _{{name}}PageState extends ConsumerState<{{name}}Page> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * 0.9) {
-      ref.read({{name}}ControllerProvider.notifier).loadNextPage();
+      ref.read({{snakeName}}ControllerProvider.notifier).loadNextPage();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch({{name}}ControllerProvider);
+    final state = ref.watch({{snakeName}}ControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text("{{name}}"),
       ),
-      body: state.isLoading && (state.items?.isEmpty ?? true)
+      body: state.isLoading && (state.{{snakeName}}s?.isEmpty ?? true)
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               controller: _scrollController,
-              itemCount: (state.items?.length ?? 0) + (state.isLoading ? 1 : 0),
+              itemCount: (state.{{snakeName}}s?.length ?? 0) + (state.isLoading ? 1 : 0),
               itemBuilder: (context, index) {
-                if (index < (state.items?.length ?? 0)) {
-                  final item = state.items![index];
+                if (index < (state.{{snakeName}}s?.length ?? 0)) {
+                  final item = state.{{snakeName}}s![index];
                   return ListTile(
                     title: Text(item.id ?? "No ID"),
                     subtitle: Text(item.createdAt?.toString() ?? ""),

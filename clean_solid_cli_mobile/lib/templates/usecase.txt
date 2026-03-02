@@ -14,7 +14,7 @@ class {{name}}Usecases {
     return await _repo.delete{{name}}ById(id);
   }
 
-  ResultFuture<List<{{name}}Entity>> search{{name}}(
+  ResultFuture<List<{{name}}Entity>> search{{name}} (
     {{name}}Entity criteria, {
     int start = 0,
     int end = 9,

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:{{projectName}}/core/di/injection_container.dart';
 import 'package:{{projectName}}/core/error/failures.dart';
-import 'package:{{projectName}}/features/{{snakeName}}/presentation/actions/{{snakeName}}_actions.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/actions/{{snakeName}}_actions.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/domain/usecases/{{snakeName}}_usecases.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/presentation/states/{{snakeName}}_states.dart';
@@ -16,15 +16,22 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
   {{name}}Controller(this._{{snakeName}}Usecases) : super(const {{name}}States());
 
   // --- RÉCUPÉRATION / RECHERCHE ---
-  Future<void> search{{name}}s({{name}}Entity? criteria) async {
+  Future<void> search{{name}}({{name}}Entity? criteria) async {
     final action = Search{{name}}Action(criteria?.id ?? "tous");
     _currentPage = 0;
     _isLastPage = false;
 
     _setLoadingState(action: action);
+    
+    state = state.copyWith(
+      currentCriteria: criteria,
+      {{snakeName}}s: [],
+      isLoading: true,
+      action: action,
+    );
 
     final res = await _{{snakeName}}Usecases.search{{name}}(
-      criteria,
+      criteria!,
       start: 0,
       end: _pageSize - 1,
     );
@@ -36,7 +43,7 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
         state = state.copyWith(
           isLoading: false,
           isClearError: true,
-          items: success,
+          {{snakeName}}s: success,
           currentCriteria: criteria,
           action: action,
         );
@@ -48,27 +55,27 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
   Future<void> loadNextPage() async {
     if (state.isLoading || _isLastPage) return;
 
-    final action = Get{{name}}sAction();
+    final action = Get{{name}}Action(); 
     _currentPage++;
     final int start = _currentPage * _pageSize;
     final int end = start + _pageSize - 1;
 
     final res = await _{{snakeName}}Usecases.search{{name}}(
-      state.currentCriteria,
+      state.currentCriteria!,
       start: start,
       end: end,
     );
 
     res.fold(
       (error) => _setError(error: error, action: action),
-      (newItems) {
-        if (newItems.isEmpty) {
+      (new{{snakeName}}s) {
+        if (new{{snakeName}}s.isEmpty) {
           _isLastPage = true;
         } else {
-          if (newItems.length < _pageSize) _isLastPage = true;
+          if (new{{snakeName}}s.length < _pageSize) _isLastPage = true;
           state = state.copyWith(
             isLoading: false,
-            items: [...?state.items, ...newItems],
+            {{snakeName}}s: [...?state.{{snakeName}}s, ...new{{snakeName}}s],
             action: action,
           );
         }
@@ -89,7 +96,7 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
         state = state.copyWith(
           isLoading: false,
           isClearError: true,
-          items: [success, ...?state.items],
+          {{snakeName}}s: [success, ...?state.{{snakeName}}s],
           action: action,
         );
       },
@@ -101,16 +108,16 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
     final action = Delete{{name}}Action(id);
     _setLoadingState(action: action);
 
-    final res = await _{{snakeName}}Usecases.delete{{name}}(id);
+    final res = await _{{snakeName}}Usecases.delete{{name}}ById(id);
 
     res.fold(
       (error) => _setError(error: error, action: action),
       (_) {
-        final newList = state.items?.where((i) => i.id != id).toList() ?? [];
+        final newList = state.{{snakeName}}s?.where((i) => i.id != id).toList() ?? [];
         state = state.copyWith(
           isLoading: false,
           isClearError: true,
-          items: newList,
+          {{snakeName}}s: newList,
           action: action,
         );
       },

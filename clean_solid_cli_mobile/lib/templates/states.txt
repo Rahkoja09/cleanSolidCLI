@@ -1,29 +1,29 @@
 import 'package:equatable/equatable.dart';
 import 'package:{{projectName}}/core/error/failures.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
-import 'package:{{projectName}}/features/{{snakeName}}/presentation/actions/{{snakeName}}_actions.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/actions/{{snakeName}}_actions.dart';
 
 class {{name}}States extends Equatable {
   final bool isLoading;
   final Failure? error;
-  final List<{{name}}Entity>? items;
-  final {{name}}Entity? currentItem;
+  final List<{{name}}Entity>? {{snakeName}}s;
+  final {{name}}Entity? currentCriteria;
   final {{name}}Actions? action;
   final String? errorCode;
 
   const {{name}}States({
     this.isLoading = false,
     this.error,
-    this.items,
-    this.currentItem,
+    this.{{snakeName}}s,
+    this.currentCriteria,
     this.action,
     this.errorCode,
   });
 
   {{name}}States copyWith({
     bool? isLoading,
-    List<{{name}}Entity>? items,
-    {{name}}Entity? currentItem,
+    List<{{name}}Entity>? {{snakeName}}s,
+    {{name}}Entity? currentCriteria,
     {{name}}Actions? action,
     String? errorCode,
     Failure? error,
@@ -32,8 +32,8 @@ class {{name}}States extends Equatable {
     return {{name}}States(
       isLoading: isLoading ?? this.isLoading,
       error: isClearError == true ? null : (error ?? this.error),
-      items: items ?? this.items,
-      currentItem: currentItem ?? this.currentItem,
+      {{snakeName}}s: {{snakeName}}s ?? this.{{snakeName}}s,
+      currentCriteria: currentCriteria ?? this.currentCriteria,
       action: action ?? this.action,
       errorCode: errorCode ?? this.errorCode,
     );
@@ -43,8 +43,8 @@ class {{name}}States extends Equatable {
   List<Object?> get props => [
         isLoading,
         error,
-        items,
-        currentItem,
+        {{snakeName}}s,
+        currentCriteria,
         action,
         errorCode,
       ];
