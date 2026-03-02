@@ -1,6 +1,5 @@
 enum FileTemplateType {
   entity,
-  localSource,
   remoteSource,
   controller,
   model,
@@ -9,7 +8,6 @@ enum FileTemplateType {
   repository,
   repositoryImpl,
   pages,
-  widgets,
   di,
   action,
 }

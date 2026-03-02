@@ -17,8 +17,15 @@ class {{name}}RepositoryImpl implements {{name}}Repository {
   ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity) async {
     return await _executeAction(() => _remoteSource.insert{{name}}(entity));
   }
+
   @override
-  ResultFuture<List<{{name}}Entity>> search{{name}}({{name}}Entity criteria , {
+  ResultFuture<{{name}}Entity> update{{name}}({{name}}Entity entity) async {
+    return await _executeAction(() => _remoteSource.update{{name}}(entity));
+  }
+
+  @override
+  ResultFuture<List<{{name}}Entity>> search{{name}}({
+    {{name}}Entity? criteria,
     int start = 0,
     int end = 9,
   }) async {
@@ -26,11 +33,17 @@ class {{name}}RepositoryImpl implements {{name}}Repository {
   }
 
   @override
-  ResultVoid delete{{name}}ById(String id) async{
+  ResultFuture<{{name}}Entity> get{{name}}ById(String id) async {
+    return await _executeAction(() => _remoteSource.get{{name}}ById(id));
+  }
+
+  @override
+  ResultVoid delete{{name}}ById(String id) async {
     return await _executeAction(() => _remoteSource.delete{{name}}ById(id));
   }
 
-  ResultFuture<T> _executeAction<T>(Future<T> Function() action) async {
+  /// Helper générique pour gérer la connectivité et les erreurs
+  Future<Either<Failure, T>> _executeAction<T>(Future<T> Function() action) async {
     if (await _networkInfo.isConnected) {
       try {
         final res = await action();
@@ -41,6 +54,6 @@ class {{name}}RepositoryImpl implements {{name}}Repository {
         return Left(UnexceptedFailure(e.toString(), "500"));
       }
     }
-    return const Left(NetworkFailure("Pas de connexion", "Net_01"));
+    return const Left(NetworkFailure("Pas de connexion Internet", "NET_001"));
   }
 }

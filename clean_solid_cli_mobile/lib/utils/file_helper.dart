@@ -70,15 +70,6 @@ class FileHelper {
     final String featureRoot = p.join(defaultFeaturePath, snakeFeatureName);
 
     switch (templateType) {
-      case FileTemplateType.localSource:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDataName,
-          "source",
-        ]);
-        fileName = "${snakeFeatureName}_local_source.dart";
-        break;
-
       case FileTemplateType.remoteSource:
         directoryPath = JoinPath.joinAllPath([
           featureRoot,
@@ -149,15 +140,6 @@ class FileHelper {
           "pages",
         ]);
         fileName = "${snakeFeatureName}_page.dart";
-        break;
-
-      case FileTemplateType.widgets:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getPresentationName,
-          "widgets",
-        ]);
-        fileName = "widgets.dart";
         break;
 
       case FileTemplateType.di:

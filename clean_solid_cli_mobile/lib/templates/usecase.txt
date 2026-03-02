@@ -4,21 +4,39 @@ import 'package:{{projectName}}/features/{{snakeName}}/domain/repository/{{snake
 
 class {{name}}Usecases {
   final {{name}}Repository _repo;
+
   {{name}}Usecases(this._repo);
 
+  /// Exécute l'insertion d'un nouveau {{name}}
   ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity) async {
     return await _repo.insert{{name}}(entity);
   }
 
+  /// Exécute la mise à jour d'un {{name}}
+  ResultFuture<{{name}}Entity> update{{name}}({{name}}Entity entity) async {
+    return await _repo.update{{name}}(entity);
+  }
+
+  /// Exécute la suppression d'un {{name}} par son identifiant
   ResultVoid delete{{name}}ById(String id) async {
     return await _repo.delete{{name}}ById(id);
   }
 
-  ResultFuture<List<{{name}}Entity>> search{{name}} (
-    {{name}}Entity criteria, {
+  /// Récupère un {{name}} spécifique
+  ResultFuture<{{name}}Entity> get{{name}}ById(String id) async {
+    return await _repo.get{{name}}ById(id);
+  }
+
+  /// Effectue une recherche de {{name}} avec pagination
+  ResultFuture<List<{{name}}Entity>> search{{name}}({
+    {{name}}Entity? criteria,
     int start = 0,
     int end = 9,
   }) async {
-    return await _repo.search{{name}}(criteria, end: end, start: start);
+    return await _repo.search{{name}}(
+      criteria: criteria,
+      start: start,
+      end: end,
+    );
   }
 }

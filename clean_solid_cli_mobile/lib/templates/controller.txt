@@ -31,7 +31,7 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
     );
 
     final res = await _{{snakeName}}Usecases.search{{name}}(
-      criteria!,
+      criteria: criteria,
       start: 0,
       end: _pageSize - 1,
     );
@@ -61,13 +61,16 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
     final int end = start + _pageSize - 1;
 
     final res = await _{{snakeName}}Usecases.search{{name}}(
-      state.currentCriteria!,
+      criteria: state.currentCriteria,
       start: start,
       end: end,
     );
 
     res.fold(
-      (error) => _setError(error: error, action: action),
+      (error) {
+        _currentPage--; // Backtrack sur l'erreur
+        _setError(error: error, action: action);
+      },
       (new{{snakeName}}s) {
         if (new{{snakeName}}s.isEmpty) {
           _isLastPage = true;
@@ -97,6 +100,30 @@ class {{name}}Controller extends StateNotifier<{{name}}States> {
           isLoading: false,
           isClearError: true,
           {{snakeName}}s: [success, ...?state.{{snakeName}}s],
+          action: action,
+        );
+      },
+    );
+  }
+
+  // --- MISE À JOUR ---
+  Future<void> update{{name}}({{name}}Entity entity) async {
+    final action = Update{{name}}Action(entity.id ?? "inconnu");
+    _setLoadingState(action: action);
+
+    final res = await _{{snakeName}}Usecases.update{{name}}(entity);
+
+    res.fold(
+      (error) => _setError(error: error, action: action),
+      (updatedEntity) {
+        final newList = state.{{snakeName}}s?.map((item) {
+          return item.id == updatedEntity.id ? updatedEntity : item;
+        }).toList();
+
+        state = state.copyWith(
+          isLoading: false,
+          isClearError: true,
+          {{snakeName}}s: newList,
           action: action,
         );
       },

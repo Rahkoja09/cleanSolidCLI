@@ -5,7 +5,9 @@ import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName
 
 abstract class {{name}}RemoteSource {
   Future<{{name}}Model> insert{{name}}({{name}}Entity entity);
+  Future<{{name}}Model> update{{name}}({{name}}Entity entity);
   Future<List<{{name}}Model>> search{{name}}({{name}}Entity? criteria, {int start = 0, int end = 9});
+  Future<{{name}}Model> get{{name}}ById(String id);
   Future<void> delete{{name}}ById(String id);
 }
 
@@ -13,14 +15,36 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
   final SupabaseClient _client;
   {{name}}RemoteSourceImpl(this._client);
 
+  static const String _tableName = "{{snakeName}}s"; // On utilise le pluriel par convention
+
   @override
   Future<{{name}}Model> insert{{name}}({{name}}Entity entity) async {
     try {
       final model = {{name}}Model.fromEntity(entity);
-      final data = await _client.from("{{name}}s").insert(model.toMap()).select().single();
+      final data = await _client.from(_tableName).insert(model.toMap()).select().single();
       return {{name}}Model.fromMap(data);
     } on PostgrestException catch (e) {
-      throw ApiException(message: e.message, code: e.code ?? "000");
+      throw ApiException(message: e.message, code: e.code ?? "POSTGREST_ERROR");
+    } catch (e) {
+      throw UnexceptedException(message: "$e");
+    }
+  }
+
+  @override
+  Future<{{name}}Model> update{{name}}({{name}}Entity entity) async {
+    try {
+      if (entity.id == null) throw const ApiException(message: "ID manquant pour la mise à jour");
+      final model = {{name}}Model.fromEntity(entity);
+      
+      final data = await _client
+          .from(_tableName)
+          .update(model.toMap())
+          .eq('id', entity.id!)
+          .select()
+          .single();
+      return {{name}}Model.fromMap(data);
+    } on PostgrestException catch (e) {
+      throw ApiException(message: e.message, code: e.code ?? "UPDATE_ERROR");
     } catch (e) {
       throw UnexceptedException(message: "$e");
     }
@@ -29,15 +53,48 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
   @override
   Future<List<{{name}}Model>> search{{name}}({{name}}Entity? criteria, {int start = 0, int end = 9}) async {
     try {
-      final res = await _client.from("{{name}}s").select("*").range(start, end);
+      // Initialisation de la requête
+      var query = _client.from(_tableName).select("*");
+
+      // Filtrage dynamique selon les champs de l'entité
+      if (criteria != null) {
+        // Note pour le futur : C'est ici que ton parseur d'arguments 
+        // injectera les filtres automatiquement.
+        if (criteria.id != null) query = query.eq("id", criteria.id);
+        
+        // Exemple de filtre type String (ilike pour la recherche textuelle)
+        // if (criteria.someField != null) query = query.ilike("some_field", "%${criteria.someField}%");
+      }
+
+      // Tri et Pagination (Lazy Loading)
+      final res = await query
+          .order("created_at", ascending: false)
+          .range(start, end);
+
       return (res as List).map((data) => {{name}}Model.fromMap(data)).toList();
+    } on PostgrestException catch (e) {
+      throw ApiException(message: e.message, code: e.code ?? "000");
     } catch (e) {
       throw UnexceptedException(message: "$e");
     }
   }
 
   @override
+  Future<{{name}}Model> get{{name}}ById(String id) async {
+    try {
+      final data = await _client.from(_tableName).select().eq('id', id).single();
+      return {{name}}Model.fromMap(data);
+    } catch (e) {
+      throw UnexceptedException(message: "Élément introuvable : $e");
+    }
+  }
+
+  @override
   Future<void> delete{{name}}ById(String id) async {
-     await _client.from("{{name}}s").delete().eq("id", id);
+    try {
+      await _client.from(_tableName).delete().eq("id", id);
+    } catch (e) {
+      throw UnexceptedException(message: "Erreur lors de la suppression : $e");
+    }
   }
 }
