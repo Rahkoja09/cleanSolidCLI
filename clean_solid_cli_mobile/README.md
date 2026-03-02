@@ -8,21 +8,8 @@ L'enjeu principal de cet outil est l'industrialisation de la Clean Architecture 
 
 ## Aperçu de la structure
 
-lib/features/nom_feature/
-├── data/
-│   ├── model/           # Mapping de données (Supabase/JSON)
-│   ├── repository/      # Implementation des contrats
-│   └── source/          # Sources de données Remote et Local
-├── domain/
-│   ├── actions/         # Classes scellées pour la gestion d'intentions
-│   ├── entity/          # Classes métiers immuables avec copyWith
-│   ├── repository/      # Interfaces et contrats de données
-│   └── usecases/        # Logique métier (Insert, Delete, Search)
-└── presentation/
-    ├── controller/      # Riverpod StateNotifiers
-    ├── pages/           # Vues Flutter (ConsumerStatefulWidget)
-    ├── states/          # Gestion d'états immuables
-    └── widgets/         # Composants d'interface locaux
+<img width="531" height="307" alt="tree" src="https://github.com/user-attachments/assets/e07fef52-1c2a-4da2-a9af-16607950f8fe" width="300" />
+
 
 ## Stack Technique
 
