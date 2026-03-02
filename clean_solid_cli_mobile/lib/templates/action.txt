@@ -1,0 +1,76 @@
+import 'package:{{projectName}}/core/actions/app_action.dart';
+
+/// Base action class for {{name}} feature using Sealed Class for Type Safety
+sealed class {{name}}Actions implements AppAction {}
+
+/// Action to Create a new {{name}}
+class Create{{name}}Action extends {{name}}Actions {
+  final String identifier;
+  Create{{name}}Action(this.identifier);
+
+  @override
+  String get errorMessage => "Impossible d'enregistrer : $identifier";
+
+  @override
+  bool get isWriteAction => true;
+
+  @override
+  String get successMessage => "Enregistrement de $identifier réussi";
+}
+
+/// Action to Update an existing {{name}}
+class Update{{name}}Action extends {{name}}Actions {
+  final String id;
+  Update{{name}}Action(this.id);
+
+  @override
+  String get errorMessage => "Échec de la modification de #$id";
+
+  @override
+  bool get isWriteAction => true;
+
+  @override
+  String get successMessage => "Mise à jour de #$id effectuée";
+}
+
+/// Action to Delete a {{name}}
+class Delete{{name}}Action extends {{name}}Actions {
+  final String id;
+  Delete{{name}}Action(this.id);
+
+  @override
+  String get errorMessage => "Impossible de supprimer #$id";
+
+  @override
+  bool get isWriteAction => true;
+
+  @override
+  String get successMessage => "Suppression de #$id confirmée";
+}
+
+/// Action to fetch the list of {{name}}
+class Get{{name}}sAction extends {{name}}Actions {
+  @override
+  String get errorMessage => "Erreur lors du chargement de la liste";
+
+  @override
+  bool get isWriteAction => false;
+
+  @override
+  String get successMessage => "Liste récupérée avec succès";
+}
+
+/// Action to search within {{name}}
+class Search{{name}}Action extends {{name}}Actions {
+  final String query;
+  Search{{name}}Action(this.query);
+
+  @override
+  String get errorMessage => "Aucun résultat pour '$query'";
+
+  @override
+  bool get isWriteAction => false;
+
+  @override
+  String get successMessage => "Résultats pour '$query' trouvés";
+}

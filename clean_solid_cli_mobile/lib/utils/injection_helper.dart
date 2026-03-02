@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
+
 class InjectionHelper {
   static void updateInjectionContainer(
     String featureName,
@@ -18,14 +20,14 @@ class InjectionHelper {
       print(" Injection déjà présente pour $capitalizedName");
       return;
     }
-
+    final projectName = GetProjetItem.getProjectName();
     final snakeName = featureName;
 
     final imports = """
-import '../features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
-import '../features/$snakeName/data/source/${snakeName}_remote_source.dart';
-import '../features/$snakeName/domain/repository/${snakeName}_repository.dart';
-import '../features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
+import 'package:$projectName/features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
+import 'package:$projectName/features/$snakeName/data/source/${snakeName}_remote_source.dart';
+import 'package:$projectName/features/$snakeName/domain/repository/${snakeName}_repository.dart';
+import 'package:$projectName/features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
 // [IMPORT_ANCHOR]""";
 
     final initCall = "  _init$capitalizedName();\n  // [INIT_ANCHOR]";

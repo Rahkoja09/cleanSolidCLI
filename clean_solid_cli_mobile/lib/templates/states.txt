@@ -1,31 +1,51 @@
 import 'package:equatable/equatable.dart';
 import 'package:{{projectName}}/core/error/failures.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
-
-enum {{name}}Action { idle, insert, delete, search, loadMore }
+import 'package:{{projectName}}/features/{{snakeName}}/presentation/actions/{{snakeName}}_actions.dart';
 
 class {{name}}States extends Equatable {
   final bool isLoading;
-  final List<{{name}}Entity>? items;
   final Failure? error;
-  final {{name}}Action action;
+  final List<{{name}}Entity>? items;
+  final {{name}}Entity? currentItem;
+  final {{name}}Actions? action;
+  final String? errorCode;
 
-  {{name}}States({
+  const {{name}}States({
     this.isLoading = false,
-    this.items,
     this.error,
-    this.action = {{name}}Action.idle,
+    this.items,
+    this.currentItem,
+    this.action,
+    this.errorCode,
   });
 
-  {{name}}States copyWith({bool? isLoading, List<{{name}}Entity>? items, Failure? error, {{name}}Action? action}) {
+  {{name}}States copyWith({
+    bool? isLoading,
+    List<{{name}}Entity>? items,
+    {{name}}Entity? currentItem,
+    {{name}}Actions? action,
+    String? errorCode,
+    Failure? error,
+    bool isClearError = false,
+  }) {
     return {{name}}States(
       isLoading: isLoading ?? this.isLoading,
+      error: isClearError == true ? null : (error ?? this.error),
       items: items ?? this.items,
-      error: error,
+      currentItem: currentItem ?? this.currentItem,
       action: action ?? this.action,
+      errorCode: errorCode ?? this.errorCode,
     );
   }
 
   @override
-  List<Object?> get props => [isLoading, items, error, action];
+  List<Object?> get props => [
+        isLoading,
+        error,
+        items,
+        currentItem,
+        action,
+        errorCode,
+      ];
 }

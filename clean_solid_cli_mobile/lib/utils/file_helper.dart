@@ -168,6 +168,14 @@ class FileHelper {
         ]);
         fileName = "${snakeFeatureName}_entity.dart";
         break;
+      case FileTemplateType.action:
+        directoryPath = JoinPath.joinAllPath([
+          featureRoot,
+          architecture.getLayers.getDomainName,
+          "actions",
+        ]);
+        fileName = "${snakeFeatureName}_actions.dart";
+        break;
     }
 
     final finalDirectory = Directory(directoryPath);

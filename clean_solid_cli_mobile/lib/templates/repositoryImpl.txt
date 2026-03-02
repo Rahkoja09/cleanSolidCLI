@@ -17,6 +17,18 @@ class {{name}}RepositoryImpl implements {{name}}Repository {
   ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity) async {
     return await _executeAction(() => _remoteSource.insert{{name}}(entity));
   }
+  @override
+  ResultFuture<{{name}}Entity> search{{name}}({{name}}Entity criteria , {
+    int start = 0,
+    int end = 9,
+  }){
+    return await _executeAction(() => _remoteSource.search{{name}}(entity, start: start, end: end));
+  }
+
+  @override
+  ResultFuture<{{name}}Entity> delete{{name}}ById(String id){
+    return await _executeAction(() => _remoteSource.delete{{name}}ById(id));
+  }
 
   ResultFuture<T> _executeAction<T>(Future<T> Function() action) async {
     if (await _networkInfo.isConnected) {

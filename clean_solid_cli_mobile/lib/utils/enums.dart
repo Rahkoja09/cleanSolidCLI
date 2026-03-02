@@ -11,4 +11,5 @@ enum FileTemplateType {
   pages,
   widgets,
   di,
+  action,
 }

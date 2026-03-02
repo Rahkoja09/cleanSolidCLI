@@ -1,23 +1,139 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '{{projectName}}/core/di/injection_container.dart';
-import '{{projectName}}/features/{{snakeName}}/domain/usecases/{{name}}_usecases.dart';
-import '{{projectName}}/features/{{snakeName}}/presentation/states/{{name}}_states.dart';
+import 'package:{{projectName}}/core/di/injection_container.dart';
+import 'package:{{projectName}}/core/error/failures.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/presentation/actions/{{snakeName}}_actions.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/usecases/{{snakeName}}_usecases.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/presentation/states/{{snakeName}}_states.dart';
 
 class {{name}}Controller extends StateNotifier<{{name}}States> {
-  final {{name}}Usecases _usecases;
+  final {{name}}Usecases _{{snakeName}}Usecases;
 
-  {{name}}Controller(this._usecases) : super({{name}}States());
+  int _currentPage = 0;
+  final int _pageSize = 10;
+  bool _isLastPage = false;
 
-  Future<void> fetchItems() async {
-    state = state.copyWith(isLoading: true, action: {{name}}Action.search);
-    final res = await _usecases.search{{name}}(null);
+  {{name}}Controller(this._{{snakeName}}Usecases) : super(const {{name}}States());
+
+  // --- RÉCUPÉRATION / RECHERCHE ---
+  Future<void> search{{name}}s({{name}}Entity? criteria) async {
+    final action = Search{{name}}Action(criteria?.id ?? "tous");
+    _currentPage = 0;
+    _isLastPage = false;
+
+    _setLoadingState(action: action);
+
+    final res = await _{{snakeName}}Usecases.search{{name}}(
+      criteria,
+      start: 0,
+      end: _pageSize - 1,
+    );
+
     res.fold(
-      (l) => state = state.copyWith(isLoading: false, error: l),
-      (r) => state = state.copyWith(isLoading: false, items: r),
+      (error) => _setError(error: error, action: action),
+      (success) {
+        if (success.length < _pageSize) _isLastPage = true;
+        state = state.copyWith(
+          isLoading: false,
+          isClearError: true,
+          items: success,
+          currentCriteria: criteria,
+          action: action,
+        );
+      },
+    );
+  }
+
+  // --- LAZY LOADING (PAGINATION) ---
+  Future<void> loadNextPage() async {
+    if (state.isLoading || _isLastPage) return;
+
+    final action = Get{{name}}sAction();
+    _currentPage++;
+    final int start = _currentPage * _pageSize;
+    final int end = start + _pageSize - 1;
+
+    final res = await _{{snakeName}}Usecases.search{{name}}(
+      state.currentCriteria,
+      start: start,
+      end: end,
+    );
+
+    res.fold(
+      (error) => _setError(error: error, action: action),
+      (newItems) {
+        if (newItems.isEmpty) {
+          _isLastPage = true;
+        } else {
+          if (newItems.length < _pageSize) _isLastPage = true;
+          state = state.copyWith(
+            isLoading: false,
+            items: [...?state.items, ...newItems],
+            action: action,
+          );
+        }
+      },
+    );
+  }
+
+  // --- INSERTION ---
+  Future<void> create{{name}}({{name}}Entity entity) async {
+    final action = Create{{name}}Action(entity.id ?? "nouveau");
+    _setLoadingState(action: action);
+
+    final res = await _{{snakeName}}Usecases.insert{{name}}(entity);
+
+    res.fold(
+      (error) => _setError(error: error, action: action),
+      (success) {
+        state = state.copyWith(
+          isLoading: false,
+          isClearError: true,
+          items: [success, ...?state.items],
+          action: action,
+        );
+      },
+    );
+  }
+
+  // --- SUPPRESSION ---
+  Future<void> delete{{name}}ById(String id) async {
+    final action = Delete{{name}}Action(id);
+    _setLoadingState(action: action);
+
+    final res = await _{{snakeName}}Usecases.delete{{name}}(id);
+
+    res.fold(
+      (error) => _setError(error: error, action: action),
+      (_) {
+        final newList = state.items?.where((i) => i.id != id).toList() ?? [];
+        state = state.copyWith(
+          isLoading: false,
+          isClearError: true,
+          items: newList,
+          action: action,
+        );
+      },
+    );
+  }
+
+  // --- UTILITAIRES INTERNES ---
+  void _setLoadingState({required {{name}}Actions action}) {
+    state = state.copyWith(isLoading: true, action: action);
+  }
+
+  void _setError({required Failure error, required {{name}}Actions action}) {
+    state = state.copyWith(
+      isLoading: false,
+      error: error,
+      errorCode: error.code,
+      action: action,
     );
   }
 }
 
-final {{name}}ControllerProvider = StateNotifierProvider<{{name}}Controller, {{name}}States>((ref) {
+// --- PROVIDER ---
+final {{snakeName}}ControllerProvider =
+    StateNotifierProvider<{{name}}Controller, {{name}}States>((ref) {
   return {{name}}Controller(sl<{{name}}Usecases>());
 });

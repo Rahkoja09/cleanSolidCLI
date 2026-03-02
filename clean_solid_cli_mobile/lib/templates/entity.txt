@@ -1,8 +1,24 @@
 import 'package:equatable/equatable.dart';
 
 class {{name}}Entity extends Equatable {
-  const {{name}}Entity();
+  final String? id;
+  final DateTime? createdAt;
+
+  const {{name}}Entity({
+    this.id,
+    this.createdAt,
+  });
+
+  {{name}}Entity copyWith({
+    String? id,
+    DateTime? createdAt,
+  }) {
+    return {{name}}Entity(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 
   @override
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => [id, createdAt];
 }

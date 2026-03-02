@@ -2,9 +2,15 @@ import 'package:{{projectName}}/core/utils/typedef/typedefs.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
 
 abstract class {{name}}Repository {
-  /// Insère un nouveau {{name}}
+  // Insère un nouveau {{name}} ------------
   ResultFuture<{{name}}Entity> insert{{name}}({{name}}Entity entity);
 
-  /// Sélectionne un {{name}} spécifique
-  ResultFuture<{{name}}Entity> select{{name}}ById(String id);
+  // recherche un/des {{name}}(s) ------
+  ResultFuture<{{name}}Entity> search{{name}}({{name}}Entity criteria , {
+    int start = 0,
+    int end = 9,
+  });
+
+  /// Sélectionne un {{name}} spécifique -------
+  ResultFuture<{{name}}Entity> delete{{name}}ById(String id);
 }

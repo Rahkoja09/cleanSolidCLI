@@ -10,10 +10,6 @@ class {{name}}Usecases {
     return await _repo.insert{{name}}(entity);
   }
 
-  ResultFuture<{{name}}Entity> update{{name}}ByI({{name}}Entity updates) async {
-    return await _repo.update{{name}}ByI(updates);
-  }
-
   ResultVoid delete{{name}}ById(String id) async {
     return await _repo.delete{{name}}ById(id);
   }
@@ -24,9 +20,5 @@ class {{name}}Usecases {
     int end = 9,
   }) async {
     return await _repo.search{{name}}(criteria, end: end, start: start);
-  }
-
-  ResultFuture<{{name}}Entity> select{{name}}ById(String id) async {
-    return await _repo.select{{name}}ById(id);
   }
 }
