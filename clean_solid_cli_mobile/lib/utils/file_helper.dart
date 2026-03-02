@@ -163,6 +163,22 @@ class FileHelper {
         ]);
         fileName = "${snakeFeatureName}_actions.dart";
         break;
+      case FileTemplateType.successErrorListener:
+        directoryPath = JoinPath.joinAllPath([
+          "lib",
+          "core",
+          "mainErrorListener",
+        ]);
+        fileName = "success_error_listener.dart";
+        break;
+      case FileTemplateType.lastNetworkTimeProvider:
+        directoryPath = JoinPath.joinAllPath([
+          "lib",
+          "core",
+          "mainErrorListener",
+        ]);
+        fileName = "last_network_time_provider.dart";
+        break;
     }
 
     final finalDirectory = Directory(directoryPath);

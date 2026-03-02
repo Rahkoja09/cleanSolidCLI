@@ -10,4 +10,6 @@ enum FileTemplateType {
   pages,
   di,
   action,
+  successErrorListener,
+  lastNetworkTimeProvider,
 }

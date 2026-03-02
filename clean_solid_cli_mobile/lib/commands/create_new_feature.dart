@@ -57,7 +57,7 @@ class CreateNewFeature extends Command {
     print(" Mise à jour de l'injection de dépendances...");
     InjectionHelper.updateInjectionContainer(featureName, capitalizedName);
 
-    ErrorListenerHelper.updateErrorListener(featureName, snakeFeatureName);
+    ErrorListenerHelper.updateErrorListener(capitalizedName, snakeFeatureName);
 
     print(" Feature [$capitalizedName] créée avec succès !");
   }

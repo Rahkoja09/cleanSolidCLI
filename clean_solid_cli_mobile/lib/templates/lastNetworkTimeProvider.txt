@@ -1,0 +1,3 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final lastNetworkErrorTimeProvider = StateProvider<DateTime?>((ref) => null);
