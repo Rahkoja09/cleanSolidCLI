@@ -2,6 +2,7 @@ import 'package:args/command_runner.dart';
 import 'package:clean_solid_cli_mobile/architectures/architectures.dart';
 import 'package:clean_solid_cli_mobile/architectures/clean/layers/clean_layers.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
+import 'package:clean_solid_cli_mobile/utils/error_listener_helper.dart';
 import 'package:clean_solid_cli_mobile/utils/file_helper.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/utils/injection_helper.dart';
@@ -29,6 +30,8 @@ class CreateNewFeature extends Command {
       featureName: featureName,
     );
 
+    final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
+
     print(" Génération de la feature : $capitalizedName...");
 
     for (var type in FileTemplateType.values) {
@@ -53,6 +56,8 @@ class CreateNewFeature extends Command {
 
     print(" Mise à jour de l'injection de dépendances...");
     InjectionHelper.updateInjectionContainer(featureName, capitalizedName);
+
+    ErrorListenerHelper.updateErrorListener(featureName, snakeFeatureName);
 
     print(" Feature [$capitalizedName] créée avec succès !");
   }

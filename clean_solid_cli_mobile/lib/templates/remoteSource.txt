@@ -33,7 +33,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
   @override
   Future<{{name}}Model> update{{name}}({{name}}Entity entity) async {
     try {
-      if (entity.id == null) throw const ApiException(message: "ID manquant pour la mise à jour");
+      if (entity.id == null) throw ApiException(message: "ID manquant pour la mise à jour");
       final model = {{name}}Model.fromEntity(entity);
       
       final data = await _client
@@ -56,14 +56,13 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
       // Initialisation de la requête
       var query = _client.from(_tableName).select("*");
 
-      // Filtrage dynamique selon les champs de l'entité
+      // Filtrage dynamique selon les champs de l'entité -----
       if (criteria != null) {
-        // Note pour le futur : C'est ici que ton parseur d'arguments 
-        // injectera les filtres automatiquement.
-        if (criteria.id != null) query = query.eq("id", criteria.id);
-        
-        // Exemple de filtre type String (ilike pour la recherche textuelle)
-        // if (criteria.someField != null) query = query.ilike("some_field", "%${criteria.someField}%");
+        final id = criteria.id;
+        if (id != null) {
+          query = query.eq("id", id);
+        }
+        // if (name != null) query = query.ilike("name", "%$name%");
       }
 
       // Tri et Pagination (Lazy Loading)
