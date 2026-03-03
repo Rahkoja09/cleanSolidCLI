@@ -13,3 +13,5 @@ enum FileTemplateType {
   successErrorListener,
   lastNetworkTimeProvider,
 }
+
+enum ImplementationType { entityImpl, modelImpl, remoteSourceImpl }

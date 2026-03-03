@@ -15,7 +15,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
   final SupabaseClient _client;
   {{name}}RemoteSourceImpl(this._client);
 
-  static const String _tableName = "{{snakeName}}s"; // On utilise le pluriel par convention
+  static const String _tableName = "{{snakeName}}s"; 
 
   @override
   Future<{{name}}Model> insert{{name}}({{name}}Entity entity) async {
@@ -53,19 +53,16 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
   @override
   Future<List<{{name}}Model>> search{{name}}({{name}}Entity? criteria, {int start = 0, int end = 9}) async {
     try {
-      // Initialisation de la requête
       var query = _client.from(_tableName).select("*");
 
-      // Filtrage dynamique selon les champs de l'entité -----
       if (criteria != null) {
         final id = criteria.id;
         if (id != null) {
           query = query.eq("id", id);
         }
-        // if (name != null) query = query.ilike("name", "%$name%");
+        // [FILTERS_ANCHOR]
       }
 
-      // Tri et Pagination (Lazy Loading)
       final res = await query
           .order("created_at", ascending: false)
           .range(start, end);

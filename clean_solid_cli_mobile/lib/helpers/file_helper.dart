@@ -15,7 +15,7 @@ class FileHelper {
     required String targetPath,
   }) async {
     final packageUri = Uri.parse(
-      'package:clean_solid_cli_mobile/templates/$templateName.txt',
+      'package:clean_solid_cli_mobile/templates/create/$templateName.txt',
     );
     final resolvedUri = await Isolate.resolvePackageUri(packageUri);
 

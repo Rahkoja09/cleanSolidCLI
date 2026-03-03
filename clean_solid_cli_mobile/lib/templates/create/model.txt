@@ -5,6 +5,7 @@ class {{name}}Model extends {{name}}Entity {
   {{name}}Model({
     super.id,
     super.createdAt,
+    // [CONSTRUCTOR_ANCHOR]
   });
 
   factory {{name}}Model.fromMap(MapData data) {
@@ -13,6 +14,7 @@ class {{name}}Model extends {{name}}Entity {
       createdAt: data['created_at'] != null 
           ? DateTime.parse(data['created_at']) 
           : null,
+      // [FROM_MAP_ANCHOR]
     );
   }
 
@@ -20,6 +22,7 @@ class {{name}}Model extends {{name}}Entity {
     return {
       if (id != null) 'id': id,
       'created_at': (createdAt ?? DateTime.now()).toIso8601String(),
+      // [TO_MAP_ANCHOR]
     };
   }
 
@@ -27,6 +30,7 @@ class {{name}}Model extends {{name}}Entity {
     return {{name}}Model(
       id: entity.id,
       createdAt: entity.createdAt,
+      // [FROM_ENTITY_ANCHOR]
     );
   }
 }
