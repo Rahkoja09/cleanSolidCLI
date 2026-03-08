@@ -1,0 +1,81 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:{{projectName}}/core/error/exceptions.dart';
+import 'package:{{projectName}}/features/auth/data/model/auth_model.dart';
+
+class EmailAuthService {
+  final SupabaseClient _client;
+  EmailAuthService(this._client);
+
+  // --- CRÉATION DE COMPTE ---
+  Future<AuthModel> signUp(String email, String password) async {
+    try {
+      final res = await _client.auth.signUp(
+        email: email,
+        password: password,
+      );
+      if (res.user == null) throw ApiException(message: "Erreur lors de l'inscription");
+      return AuthModel.fromSupabase(res.user!);
+    } on AuthException catch (e) {
+      throw ApiException(message: e.message, code: e.status);
+    } catch (e) {
+      throw UnexceptedException(message: e.toString());
+    }
+  }
+
+  // --- CONNEXION ---
+  Future<AuthModel> signIn(String email, String password) async {
+    try {
+      final res = await _client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      if (res.user == null) throw ApiException(message: "Utilisateur introuvable");
+      return AuthModel.fromSupabase(res.user!);
+    } on AuthException catch (e) {
+      throw ApiException(message: e.message, code: e.status);
+    } catch (e) {
+      throw UnexceptedException(message: e.toString());
+    }
+  }
+
+  // --- MOT DE PASSE OUBLIÉ (Envoi du code) ---
+  Future<void> sendPasswordResetOtp(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email);
+    } on AuthException catch (e) {
+      throw ApiException(message: e.message, code: e.status);
+    } catch (e) {
+      throw UnexceptedException(message: e.toString());
+    }
+  }
+
+  // --- VÉRIFICATION OTP ---
+  Future<AuthModel> verifyOtp(String email, String code, OtpType type) async {
+    try {
+      final res = await _client.auth.verifyOTP(
+        email: email,
+        token: code,
+        type: type, // Utilise OtpType.signup ou OtpType.recovery
+      );
+      if (res.user == null) throw ApiException(message: "Code invalide");
+      return AuthModel.fromSupabase(res.user!);
+    } on AuthException catch (e) {
+      throw ApiException(message: e.message, code: e.status);
+    } catch (e) {
+      throw UnexceptedException(message: e.toString());
+    }
+  }
+
+  // --- SÉCURITÉ ---
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await _client.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } on AuthException catch (e) {
+      throw ApiException(message: e.message, code: e.status);
+    } catch (e) {
+      throw UnexceptedException(message: e.toString());
+    }
+  }
+}
