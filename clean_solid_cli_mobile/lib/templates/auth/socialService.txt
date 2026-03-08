@@ -41,7 +41,7 @@ class SocialAuthService {
 
       return AuthModel.fromSupabase(res.user!);
     } on AuthException catch (e) {
-      throw ApiException(message: e.message, code: e.status);
+      throw ApiException(message: e.message, code: e.statusCode);
     } catch (e) {
       throw UnexceptedException(message: e.toString());
     }

@@ -88,6 +88,7 @@ Future<void> init() async {
       authImports = """
 import 'package:$projectName/features/auth/data/repository/auth_repository_impl.dart';
 import 'package:$projectName/features/auth/data/source/auth_remote_source.dart';
+import 'package:$projectName/features/auth/data/source/auth_remote_source_impl.dart';
 import 'package:$projectName/features/auth/domain/repository/auth_repository.dart';
 import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';""";
     }
