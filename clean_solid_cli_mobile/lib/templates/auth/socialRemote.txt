@@ -1,0 +1,49 @@
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:{{projectName}}/core/error/exceptions.dart';
+import 'package:{{projectName}}/features/auth/data/model/auth_model.dart';
+
+class SocialAuthService {
+  final SupabaseClient _client;
+  SocialAuthService(this._client);
+
+  Future<AuthModel?> signInWithGoogle({
+    required String webClientId,
+    String? iosClientId,
+  }) async {
+    try {
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        clientId: iosClientId,
+        serverClientId: webClientId,
+      );
+
+      // On force le sign-out local pour permettre de changer de compte ---------
+      await googleSignIn.signOut();
+      
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) return null; // L'utilisateur a fermé la popup ------
+
+      final googleAuth = await googleUser.authentication;
+      
+      if (googleAuth.idToken == null) {
+        throw ApiException(message: "ID Token Google manquant");
+      }
+
+      final res = await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: googleAuth.idToken!,
+        accessToken: googleAuth.accessToken,
+      );
+
+      if (res.user == null) {
+        throw ApiException(message: "Erreur lors de la création de session Supabase");
+      }
+
+      return AuthModel.fromSupabase(res.user!);
+    } on AuthException catch (e) {
+      throw ApiException(message: e.message, code: e.status);
+    } catch (e) {
+      throw UnexceptedException(message: e.toString());
+    }
+  }
+}

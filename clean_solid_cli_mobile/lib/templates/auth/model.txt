@@ -1,0 +1,30 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:{{projectName}}/features/auth/domain/entity/auth_entity.dart';
+
+class AuthModel extends AuthEntity {
+  AuthModel({
+    super.id,
+    super.email,
+    super.fullName,
+    super.photoUrl,
+    super.createdAt,
+  });
+
+  factory AuthModel.fromSupabase(User user) {
+    return AuthModel(
+      id: user.id,
+      email: user.email,
+      fullName: user.userMetadata?['full_name'] ?? user.userMetadata?['name'],
+      photoUrl: user.userMetadata?['avatar_url'] ?? user.userMetadata?['picture'],
+      createdAt: DateTime.parse(user.createdAt),
+    );
+  }
+
+  AuthEntity toEntity() => AuthEntity(
+    id: id,
+    email: email,
+    fullName: fullName,
+    photoUrl: photoUrl,
+    createdAt: createdAt,
+  );
+}

@@ -15,3 +15,22 @@ enum FileTemplateType {
 }
 
 enum ImplementationType { entityImpl, modelImpl, remoteSourceImpl }
+
+enum AuthFileType {
+  entity,
+  model,
+  remoteSource,
+  remoteSourceImpl,
+  socialService,
+  emailService,
+  repository,
+  repositoryImpl,
+  usecases,
+  states,
+  action,
+  controller,
+}
+
+enum AuthEmailType { emailRemote }
+
+enum AuthSocilaType { socialRemote }

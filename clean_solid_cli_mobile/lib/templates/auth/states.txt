@@ -1,0 +1,25 @@
+import 'package:equatable/equatable.dart';
+import 'package:{{projectName}}/core/error/failures.dart';
+import 'package:{{projectName}}/features/auth/domain/entity/auth_entity.dart';
+import 'package:{{projectName}}/features/auth/domain/actions/auth_actions.dart';
+
+class AuthStates extends Equatable {
+  final bool isLoading;
+  final Failure? error;
+  final AuthEntity? user;
+  final AuthActions? action;
+
+  const AuthStates({this.isLoading = false, this.error, this.user, this.action});
+
+  AuthStates copyWith({bool? isLoading, AuthEntity? user, AuthActions? action, Failure? error, bool isClearError = false}) {
+    return AuthStates(
+      isLoading: isLoading ?? this.isLoading,
+      user: user ?? this.user,
+      action: action ?? this.action,
+      error: isClearError ? null : (error ?? this.error),
+    );
+  }
+
+  @override
+  List<Object?> get props => [isLoading, error, user, action];
+}
