@@ -278,23 +278,15 @@ class Injections {
     final refFields = fields.where((f) => f.isReference).toList();
     if (refFields.isEmpty) return content;
 
-    // Construire la liste des relations : "*, boutique(*), categorie(*)"
     final relations = refFields
         .map((f) => '${f.name}(${f.referenceTargetSnake}s)')
         .join(', ');
-    final selectWithRelations = '*, $relations';
 
-    // 1. Remplacer .select("*") par .select("*, boutique(*)")
-    content = content.replaceFirst(
-      '.select("*")',
-      '.select("$selectWithRelations")',
-    );
+    // 1. Remplacer .select("*") par .select("*, boutique(boutiques)")
+    content = content.replaceFirst('.select("*")', '.select("*, $relations")');
 
-    // 2. Remplacer les autres .select() (sans argument) par .select("boutique(*)")
-    // Ces appels apparaissent dans insert, update, getById
-    if (refFields.isNotEmpty) {
-      content = content.replaceAll('.select()', '.select("$relations")');
-    }
+    // 2. Remplacer .select() (insert, update, getById) — IL FAUT "*"
+    content = content.replaceAll('.select()', '.select("*, $relations")');
 
     return content;
   }
