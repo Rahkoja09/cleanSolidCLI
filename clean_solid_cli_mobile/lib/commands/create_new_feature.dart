@@ -8,6 +8,7 @@ import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/helpers/injection_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/implementation_helper.dart';
+import 'package:clean_solid_cli_mobile/utils/interactive_prompt.dart';
 
 class CreateNewFeature extends Command {
   @override
@@ -23,23 +24,44 @@ class CreateNewFeature extends Command {
       abbr: 'i',
       help:
           "Liste des champs pour générer l'Entity, le Model et les filtres (ex: nom:string,prix:double)",
-      mandatory:
-          false, // On laisse le choix à l'utilisateur (il veux ou pas ilplementer avec les entty entré : -i "...")
+      mandatory: false,
+    );
+    argParser.addFlag(
+      'interactive',
+      abbr: 't',
+      help:
+          'Mode interactif — pose des questions au lieu d\'utiliser les flags',
+      defaultsTo: false,
+      negatable: false,
     );
   }
 
   @override
   void run() async {
     final layers = CleanLayers("data", "domain", "presentation");
-    final arch = Architectures("Clean", "clean architecure + SOLIDE", layers);
+    final arch = Architectures("Clean", "clean architecture + SOLIDE", layers);
 
-    if (argResults?.rest.isEmpty ?? true) {
-      print("Erreur : nom de feature manquant (ex: cscm create maison).");
-      return;
+    final isInteractive = argResults?['interactive'] as bool? ?? false;
+    String featureName;
+    String? fieldsInput;
+
+    if (isInteractive || (argResults?.rest.isEmpty ?? true)) {
+      // --- MODE INTERACTIF ---
+      print('\n Création d\'une nouvelle feature\n');
+      featureName = InteractivePrompt.ask('Nom de la feature', required: true);
+
+      final wantFields = InteractivePrompt.askBool(
+        'Voulez-vous définir les champs maintenant ?',
+      );
+
+      if (wantFields) {
+        fieldsInput = InteractivePrompt.askFields();
+      }
+    } else {
+      // --- MODE FLAGS ---
+      featureName = argResults!.rest.first.toLowerCase();
+      fieldsInput = argResults?['fields'] as String?;
     }
-
-    final featureName = argResults!.rest.first.toLowerCase();
-    final fieldsInput = argResults?['fields'] as String?;
 
     final capitalizedName = ReformateClassName.capitalizeClassName(
       featureName: featureName,
@@ -47,7 +69,9 @@ class CreateNewFeature extends Command {
 
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
 
-    print("Génération de la structure pour : $capitalizedName...");
+    print(
+      "\n (working) : Génération de la structure pour : $capitalizedName...\n",
+    );
 
     for (var type in FileTemplateType.values) {
       if (type == FileTemplateType.di) continue;
@@ -65,12 +89,12 @@ class CreateNewFeature extends Command {
           targetPath: targetPath,
         );
       } catch (e) {
-        print("Erreur lors de la génération de $type : $e");
+        print(" :( Erreur lors de la génération de ${type.name} : $e");
       }
     }
 
     if (fieldsInput != null && fieldsInput.isNotEmpty) {
-      print("Implémentation des entités détectée...");
+      print("\n Implémentation des entités...\n");
 
       try {
         final projectName = GetProjetItem.getProjectName();
@@ -81,24 +105,22 @@ class CreateNewFeature extends Command {
           projectName: projectName,
         );
 
-        print(
-          "Champs injectés avec succès dans l'Entity, le Model et la RemoteSource.",
-        );
+        print("  Champs injectés dans l'Entity, le Model et le RemoteSource.");
       } catch (e) {
         print("Erreur d'implémentation : $e");
       }
-    } else {
-      print(
-        "Aucune implémentation demandée (pas de flag -i). Structure vide créée.",
-      );
     }
 
-    print("Mise à jour de l'injection de dépendances...");
+    print("\nMise à jour de l'injection de dépendances...");
     InjectionHelper.updateInjectionContainer(featureName, capitalizedName);
 
     print("Mise à jour du ErrorListener...");
     ErrorListenerHelper.updateErrorListener(capitalizedName, snakeFeatureName);
 
-    print("\nFeature [$capitalizedName] terminée avec succès !");
+    print("\n Feature [$capitalizedName] créée avec succès !\n");
+    print("   Prochaine étape : implémentez l'UI dans ");
+    print(
+      "   lib/features/$snakeFeatureName/presentation/pages/${snakeFeatureName}_page.dart\n",
+    );
   }
 }
