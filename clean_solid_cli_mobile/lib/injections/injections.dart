@@ -9,48 +9,89 @@ class Injections {
   ) {
     final snakeName = name.toLowerCase();
 
+    // Pour les references, on genere 2 champs : boutiqueId (String?) + boutique (BoutiqueEntity?)
     final fieldsStr = fields
         .map((f) {
           if (f.isEnum) {
             return "  final ${f.enumClassName}? ${f.name};";
           }
+          if (f.isReference) {
+            return "  final String? ${f.referenceIdName};\n"
+                "  final ${f.referenceTarget}Entity? ${f.name};";
+          }
           return "  final ${f.type}? ${f.name};";
         })
         .join('\n');
 
-    final constructorStr = fields.map((f) => "    this.${f.name},").join('\n');
+    final constructorStr = fields
+        .map((f) {
+          if (f.isReference) {
+            return "    this.${f.referenceIdName},\n    this.${f.name},";
+          }
+          return "    this.${f.name},";
+        })
+        .join('\n');
 
     final copyWithParamsStr = fields
         .map((f) {
-          final type = f.isEnum ? f.enumClassName : f.type;
-          return "    ${type}? ${f.name},";
+          if (f.isEnum) {
+            return "    ${f.enumClassName}? ${f.name},";
+          }
+          if (f.isReference) {
+            return "    String? ${f.referenceIdName},\n"
+                "    ${f.referenceTarget}Entity? ${f.name},";
+          }
+          return "    ${f.type}? ${f.name},";
         })
         .join('\n');
 
     final copyWithReturnStr = fields
-        .map((f) => "      ${f.name}: ${f.name} ?? this.${f.name},")
+        .map((f) {
+          if (f.isReference) {
+            return "      ${f.referenceIdName}: ${f.referenceIdName} ?? this.${f.referenceIdName},\n"
+                "      ${f.name}: ${f.name} ?? this.${f.name},";
+          }
+          return "      ${f.name}: ${f.name} ?? this.${f.name},";
+        })
         .join('\n');
 
-    final propsStr = fields.map((f) => "    ${f.name},").join('\n');
+    final propsStr = fields
+        .map((f) {
+          if (f.isReference) {
+            return "    ${f.referenceIdName},\n    ${f.name},";
+          }
+          return "    ${f.name},";
+        })
+        .join('\n');
 
     var result = content;
 
-    // Injecter les imports des enums avant 'class '
-    final enumFields = fields.where((f) => f.isEnum).toList();
-    if (enumFields.isNotEmpty) {
-      final enumImports = enumFields
-          .map(
-            (f) =>
-                "import 'package:$projectName/features/$snakeName/domain/enums/${f.name}_enum.dart';",
-          )
-          .join('\n');
+    // Collecter tous les imports a injecter (enums + references)
+    final List<String> imports = [];
 
+    // Imports des enums
+    for (final f in fields.where((f) => f.isEnum)) {
+      imports.add(
+        "import 'package:$projectName/features/$snakeName/domain/enums/${f.name}_enum.dart';",
+      );
+    }
+
+    // Imports des entities referencees
+    for (final f in fields.where((f) => f.isReference)) {
+      imports.add(
+        "import 'package:$projectName/features/${f.referenceTargetSnake}/domain/entity/${f.referenceTargetSnake}_entity.dart';",
+      );
+    }
+
+    // Injecter les imports avant 'class '
+    if (imports.isNotEmpty) {
+      final importBlock = imports.join('\n');
       final classIndex = result.indexOf('class ');
       if (classIndex != -1) {
         final insertIndex = result.lastIndexOf('\n', classIndex);
         if (insertIndex != -1) {
           result =
-              '${result.substring(0, insertIndex + 1)}$enumImports\n${result.substring(insertIndex + 1)}';
+              '${result.substring(0, insertIndex + 1)}$importBlock\n${result.substring(insertIndex + 1)}';
         }
       }
     }
@@ -80,12 +121,28 @@ class Injections {
   ) {
     final snakeName = name.toLowerCase();
 
-    final constructorStr = fields.map((f) => "    super.${f.name},").join('\n');
+    // Constructor : pour references, super.boutiqueId + super.boutique
+    final constructorStr = fields
+        .map((f) {
+          if (f.isReference) {
+            return "    super.${f.referenceIdName},\n    super.${f.name},";
+          }
+          return "    super.${f.name},";
+        })
+        .join('\n');
 
+    // fromMap : pour references, parser boutique_id (String FK) + boutique (nested object)
     final fromMapStr = fields
         .map((f) {
           if (f.isEnum) {
             return "      ${f.name}: data['${f.snakeName}'] != null ? ${f.enumClassName}.fromString(data['${f.snakeName}'] as String) : null,";
+          }
+          if (f.isReference) {
+            return "      ${f.referenceIdName}: data['${f.referenceIdSnake}'] as String?,\n"
+                "      ${f.name}: data['${f.name}'] != null\n"
+                "          ? ${f.referenceTarget}Model.fromMap("
+                "Map<String, dynamic>.from(data['${f.name}'] as Map))\n"
+                "          : null,";
           }
           if (f.type == 'DateTime') {
             return "      ${f.name}: data['${f.snakeName}'] != null ? DateTime.parse(data['${f.snakeName}']) : null,";
@@ -94,10 +151,14 @@ class Injections {
         })
         .join('\n');
 
+    // toMap : pour references, seul le FK est envoye en DB
     final toMapStr = fields
         .map((f) {
           if (f.isEnum) {
             return "      '${f.snakeName}': ${f.name}?.value,";
+          }
+          if (f.isReference) {
+            return "      '${f.referenceIdSnake}': ${f.referenceIdName},";
           }
           if (f.type == 'DateTime') {
             return "      '${f.snakeName}': ${f.name}?.toIso8601String(),";
@@ -106,28 +167,48 @@ class Injections {
         })
         .join('\n');
 
+    // fromEntity : pour references, copier les 2 champs
     final fromEntityStr = fields
-        .map((f) => "      ${f.name}: entity.${f.name},")
+        .map((f) {
+          if (f.isReference) {
+            return "      ${f.referenceIdName}: entity.${f.referenceIdName},\n"
+                "      ${f.name}: entity.${f.name},";
+          }
+          return "      ${f.name}: entity.${f.name},";
+        })
         .join('\n');
 
     var result = content;
 
-    // Injecter les imports des enums avant 'class '
-    final enumFields = fields.where((f) => f.isEnum).toList();
-    if (enumFields.isNotEmpty) {
-      final enumImports = enumFields
-          .map(
-            (f) =>
-                "import 'package:$projectName/features/$snakeName/domain/enums/${f.name}_enum.dart';",
-          )
-          .join('\n');
+    // Collecter tous les imports a injecter (enums + references)
+    final List<String> imports = [];
 
+    // Imports des enums
+    for (final f in fields.where((f) => f.isEnum)) {
+      imports.add(
+        "import 'package:$projectName/features/$snakeName/domain/enums/${f.name}_enum.dart';",
+      );
+    }
+
+    // Imports des entities + models referencees
+    for (final f in fields.where((f) => f.isReference)) {
+      imports.add(
+        "import 'package:$projectName/features/${f.referenceTargetSnake}/domain/entity/${f.referenceTargetSnake}_entity.dart';",
+      );
+      imports.add(
+        "import 'package:$projectName/features/${f.referenceTargetSnake}/data/model/${f.referenceTargetSnake}_model.dart';",
+      );
+    }
+
+    // Injecter les imports avant 'class '
+    if (imports.isNotEmpty) {
+      final importBlock = imports.join('\n');
       final classIndex = result.indexOf('class ');
       if (classIndex != -1) {
         final insertIndex = result.lastIndexOf('\n', classIndex);
         if (insertIndex != -1) {
           result =
-              '${result.substring(0, insertIndex + 1)}$enumImports\n${result.substring(insertIndex + 1)}';
+              '${result.substring(0, insertIndex + 1)}$importBlock\n${result.substring(insertIndex + 1)}';
         }
       }
     }
@@ -152,26 +233,69 @@ class Injections {
   }
 
   static String injectRemoteSource(String content, List<Field> fields) {
+    // Filtres : pour references, filtrer sur boutique_id avec criteria.boutiqueId
     final filtersStr = fields
         .map((f) {
+          String fieldName;
+          String dbCol;
           String filterLogic;
-          if (f.type == 'String') {
-            filterLogic =
-                'query = query.ilike("${f.snakeName}", "%\$${f.name}%");';
+
+          if (f.isReference) {
+            fieldName = f.referenceIdName;
+            dbCol = f.referenceIdSnake;
+            filterLogic = 'query = query.eq("$dbCol", $fieldName);';
+          } else if (f.type == 'String') {
+            fieldName = f.name;
+            dbCol = f.snakeName;
+            filterLogic = 'query = query.ilike("$dbCol", "%\$$fieldName%");';
           } else {
-            filterLogic = 'query = query.eq("${f.snakeName}", ${f.name});';
+            fieldName = f.name;
+            dbCol = f.snakeName;
+            filterLogic = 'query = query.eq("$dbCol", $fieldName);';
           }
           return '''
-        final ${f.name} = criteria.${f.name};
-        if (${f.name} != null) {
+        final $fieldName = criteria.$fieldName;
+        if ($fieldName != null) {
           $filterLogic
         }''';
         })
         .join('\n');
 
-    return content.replaceFirst(
+    var result = content.replaceFirst(
       '// [FILTERS_ANCHOR]',
       '$filtersStr\n        // [FILTERS_ANCHOR]',
     );
+
+    // Injecter les relations dans les select si presentes
+    result = injectSelect(result, fields);
+
+    return result;
+  }
+
+  /// Remplace .select("*") par .select("*, boutique(*)") et
+  /// .select() par .select("boutique(*)") pour le eager loading des relations.
+  static String injectSelect(String content, List<Field> fields) {
+    final refFields = fields.where((f) => f.isReference).toList();
+    if (refFields.isEmpty) return content;
+
+    // Construire la liste des relations : "*, boutique(*), categorie(*)"
+    final relations = refFields
+        .map((f) => '${f.name}(${f.referenceTargetSnake}s)')
+        .join(', ');
+    final selectWithRelations = '*, $relations';
+
+    // 1. Remplacer .select("*") par .select("*, boutique(*)")
+    content = content.replaceFirst(
+      '.select("*")',
+      '.select("$selectWithRelations")',
+    );
+
+    // 2. Remplacer les autres .select() (sans argument) par .select("boutique(*)")
+    // Ces appels apparaissent dans insert, update, getById
+    if (refFields.isNotEmpty) {
+      content = content.replaceAll('.select()', '.select("$relations")');
+    }
+
+    return content;
   }
 }

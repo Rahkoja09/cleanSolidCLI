@@ -4,15 +4,27 @@ class Field {
   final String snakeName; // ex: birth_date
   final bool isEnum;
   final List<String> enumValues; // ex: ["EnAttente", "Validee", "Annulee"]
+  final bool isReference; // true si reference(Boutique)
+  final String referenceTarget; // ex: "Boutique" (PascalCase)
+  final String referenceTargetSnake; // ex: "boutique"
 
   Field({
     required this.name,
     required this.type,
     this.isEnum = false,
     this.enumValues = const [],
+    this.isReference = false,
+    this.referenceTarget = '',
+    this.referenceTargetSnake = '',
   }) : snakeName = _convertToSnakeCase(name);
 
-  /// PascalCase class name pour un enum (ex: "statut" → "Statut", "order_status" → "OrderStatus")
+  /// Nom du champ FK en camelCase (ex: "boutique" → "boutiqueId")
+  String get referenceIdName => '${name}Id';
+
+  /// Nom du champ FK en snake_case pour la DB (ex: "boutique" → "boutique_id")
+  String get referenceIdSnake => '${snakeName}_id';
+
+  /// PascalCase class name pour un enum (ex: "statut" → "Statut")
   String get enumClassName {
     if (!isEnum) return '';
     return name.split('_').map((part) {
@@ -40,5 +52,5 @@ class Field {
 
   @override
   String toString() =>
-      'Field($name: $type${isEnum ? ' [enum: $enumValues]' : ''})';
+      'Field($name: $type${isEnum ? ' [enum: $enumValues]' : ''}${isReference ? ' [ref: $referenceTarget]' : ''})';
 }

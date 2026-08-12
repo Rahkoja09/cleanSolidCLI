@@ -17,6 +17,25 @@ class FieldParser {
       final name = kv[0].trim();
       final rawType = kv[1].trim();
 
+      // Detection des references : boutique:reference(Boutique) ou boutique:ref(Boutique)
+      final refMatch = RegExp(
+        r'^(?:reference|ref)\((.+)\)$',
+      ).firstMatch(rawType);
+      if (refMatch != null) {
+        final target = refMatch.group(1)!.trim(); // "Boutique"
+        final targetSnake = _toSnakeCase(target); // "boutique"
+        fields.add(
+          Field(
+            name: name,
+            type: 'String',
+            isReference: true,
+            referenceTarget: target,
+            referenceTargetSnake: targetSnake,
+          ),
+        );
+        continue;
+      }
+
       // Detection des enums : statut:enum(EnAttente,Validee,Annulee)
       final enumMatch = RegExp(r'^enum\((.+)\)$').firstMatch(rawType);
       if (enumMatch != null) {
@@ -42,6 +61,16 @@ class FieldParser {
     }
 
     return fields;
+  }
+
+  /// Convertit PascalCase en snake_case (ex: "Boutique" → "boutique")
+  static String _toSnakeCase(String input) {
+    return input
+        .replaceAllMapped(
+          RegExp(r'([a-z0-9])([A-Z])'),
+          (Match m) => '${m[1]}_${m[2]!.toLowerCase()}',
+        )
+        .toLowerCase();
   }
 
   /// Split sur les virgules SAUF celles entre parentheses
