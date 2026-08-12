@@ -5,6 +5,7 @@ import 'package:clean_solid_cli_mobile/commands/create_new_feature.dart';
 import 'package:clean_solid_cli_mobile/commands/implemente_new_feature.dart';
 import 'package:clean_solid_cli_mobile/commands/config_command.dart';
 import 'package:clean_solid_cli_mobile/commands/init_command.dart';
+import 'package:clean_solid_cli_mobile/commands/generate_all_command.dart';
 
 void main(List<String> arguments) async {
   final runner = CommandRunner(
@@ -15,12 +16,14 @@ void main(List<String> arguments) async {
         "  cscm config -n <nom>    Configurer le projet courant\n"
         "  cscm create <feature>   Générer une nouvelle feature\n"
         "  cscm implemente <feature> -i \"champ:type\"  Implémenter les champs\n"
+        "  cscm generate:all       Générer toutes les features depuis un YAML\n"
         "  cscm auth [--social]    Générer le module d'authentification",
   );
   runner.addCommand(InitCommand());
   runner.addCommand(ConfigCommand());
   runner.addCommand(CreateNewFeature());
   runner.addCommand(ImplementeNewFeature());
+  runner.addCommand(GenerateAllCommand());
   runner.addCommand(CreateAuth());
   try {
     await runner.run(arguments);
@@ -28,7 +31,7 @@ void main(List<String> arguments) async {
     print(e);
     exitCode = 64;
   } catch (e) {
-    print("Erreur : $e");
+    print("  Erreur : $e");
     exitCode = 1;
   }
 }
