@@ -4,7 +4,7 @@ class FieldParser {
   static List<Field> parse(String input) {
     if (input.isEmpty) return [];
 
-    final parts = input.split(',');
+    final parts = _splitRespectingParentheses(input);
     final List<Field> fields = [];
 
     for (var part in parts) {
@@ -15,12 +15,62 @@ class FieldParser {
       }
 
       final name = kv[0].trim();
-      final type = _mapDartType(kv[1].trim());
+      final rawType = kv[1].trim();
 
-      fields.add(Field(name: name, type: type));
+      // Detection des enums : statut:enum(EnAttente,Validee,Annulee)
+      final enumMatch = RegExp(r'^enum\((.+)\)$').firstMatch(rawType);
+      if (enumMatch != null) {
+        final values =
+            enumMatch
+                .group(1)!
+                .split(',')
+                .map((v) => v.trim())
+                .where((v) => v.isNotEmpty)
+                .toList();
+        final className =
+            name.split('_').map((w) {
+              if (w.isEmpty) return '';
+              return '${w[0].toUpperCase()}${w.substring(1)}';
+            }).join();
+        fields.add(
+          Field(name: name, type: className, isEnum: true, enumValues: values),
+        );
+      } else {
+        final type = _mapDartType(rawType);
+        fields.add(Field(name: name, type: type));
+      }
     }
 
     return fields;
+  }
+
+  /// Split sur les virgules SAUF celles entre parentheses
+  static List<String> _splitRespectingParentheses(String input) {
+    final List<String> parts = [];
+    final buffer = StringBuffer();
+    int depth = 0;
+
+    for (int i = 0; i < input.length; i++) {
+      final char = input[i];
+      if (char == '(') {
+        depth++;
+        buffer.write(char);
+      } else if (char == ')') {
+        depth--;
+        buffer.write(char);
+      } else if (char == ',' && depth == 0) {
+        parts.add(buffer.toString().trim());
+        buffer.clear();
+      } else {
+        buffer.write(char);
+      }
+    }
+
+    if (buffer.isNotEmpty) {
+      parts.add(buffer.toString().trim());
+    }
+
+    return parts;
   }
 
   static String _mapDartType(String input) {

@@ -4,12 +4,11 @@ CSCM est un outil d'interface en ligne de commande (CLI) dédié à la générat
 
 ## Objectif
 
-L'enjeu principal de cet outil est l'industrialisation de la Clean Architecture au sein d"un écosystème flutter, permettant de supprimer le boilerplate et de garantir la cohérence technique et de focaliser plus sur les metiers et expériences utilisateurs que de passer trop de temps sur la structuration des dossiers  et/ou fichiers.
+L'enjeu principal de cet outil est l'industrialisation de la Clean Architecture au sein d"un écosystème flutter, permettant de supprimer le boilerplate et de garantir la cohérence technique et de focaliser plus sur les metiers et expériences utilisateurs que de passer trop de temps sur la structuration des dossiers et/ou fichiers.
 
 ## Aperçu de la structure
 
 <img width="531" height="307" alt="tree" src="https://github.com/user-attachments/assets/e07fef52-1c2a-4da2-a9af-16607950f8fe" width="300" />
-
 
 ## Stack Technique
 
@@ -36,5 +35,3 @@ L'enjeu principal de cet outil est l'industrialisation de la Clean Architecture 
 5. Exécuter la commande : `cscm create nom_feature`
 
 ---
-
-Coming push...

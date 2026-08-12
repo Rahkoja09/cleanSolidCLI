@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:clean_solid_cli_mobile/injections/injections.dart';
+import 'package:clean_solid_cli_mobile/models/field.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/utils/fieldParser.dart';
 import 'package:path/path.dart' as p;
@@ -11,28 +12,40 @@ class ImplementationHelper {
     required String projectName,
   }) {
     final fields = FieldParser.parse(fieldsRaw);
-    print("DEBUG: ${fields.length} fields, cwd=${Directory.current.path}");
     if (fields.isEmpty) return;
 
-    final snakeName =
-        featureName.toLowerCase(); // Format snake_case simple ---------
-    final pascalName =
-        featureName; // Format PascalCase ------------------------
+    final snakeName = featureName.toLowerCase();
+    final pascalName = featureName;
 
+    // 1. Generer les fichiers enum
+    _generateEnumFiles(fields, snakeName);
+
+    // 2. Injecter dans entity, model, remoteSource
     for (var type in ImplementationType.values) {
       try {
         final filePath = _getFilePathForType(type, snakeName);
         final file = File(filePath);
+
         if (!file.existsSync()) continue;
 
         String content = file.readAsStringSync();
 
         switch (type) {
           case ImplementationType.entityImpl:
-            content = Injections.injectEntity(content, fields, pascalName);
+            content = Injections.injectEntity(
+              content,
+              fields,
+              pascalName,
+              projectName,
+            );
             break;
           case ImplementationType.modelImpl:
-            content = Injections.injectModel(content, fields, pascalName);
+            content = Injections.injectModel(
+              content,
+              fields,
+              pascalName,
+              projectName,
+            );
             break;
           case ImplementationType.remoteSourceImpl:
             content = Injections.injectRemoteSource(content, fields);
@@ -45,6 +58,51 @@ class ImplementationHelper {
         print("Erreur lors de l'implémentation de ${type.name} : $e");
       }
     }
+  }
+
+  static void _generateEnumFiles(List<Field> fields, String snakeName) {
+    final enumFields = fields.where((f) => f.isEnum).toList();
+    if (enumFields.isEmpty) return;
+
+    final enumDir = Directory('lib/features/$snakeName/domain/enums');
+    if (!enumDir.existsSync()) {
+      enumDir.createSync(recursive: true);
+    }
+
+    for (final field in enumFields) {
+      final filePath =
+          'lib/features/$snakeName/domain/enums/${field.name}_enum.dart';
+      final file = File(filePath);
+
+      if (file.existsSync()) {
+        print("  Enum ${field.enumClassName} existe déjà. Saut.");
+        continue;
+      }
+
+      final content = _buildEnumContent(field);
+      file.writeAsStringSync(content);
+      print("  Enum généré : ${field.name}_enum.dart");
+    }
+  }
+
+  static String _buildEnumContent(Field field) {
+    final className = field.enumClassName;
+    final values = field.dartEnumValues.map((v) => '  $v,').join('\n');
+
+    return '''enum $className {
+ $values
+
+  String get value => name;
+
+  static $className? fromString(String? value) {
+    if (value == null) return null;
+    return $className.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => throw ArgumentError('Unknown $className value: \$value'),
+    );
+  }
+}
+''';
   }
 
   static String _getFilePathForType(ImplementationType type, String snake) {

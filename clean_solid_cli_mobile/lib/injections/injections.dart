@@ -1,20 +1,61 @@
 import 'package:clean_solid_cli_mobile/models/field.dart';
 
 class Injections {
-  static String injectEntity(String content, List<Field> fields, String name) {
+  static String injectEntity(
+    String content,
+    List<Field> fields,
+    String name,
+    String projectName,
+  ) {
+    final snakeName = name.toLowerCase();
+
     final fieldsStr = fields
-        .map((f) => "  final ${f.type}? ${f.name};")
+        .map((f) {
+          if (f.isEnum) {
+            return "  final ${f.enumClassName}? ${f.name};";
+          }
+          return "  final ${f.type}? ${f.name};";
+        })
         .join('\n');
+
     final constructorStr = fields.map((f) => "    this.${f.name},").join('\n');
+
     final copyWithParamsStr = fields
-        .map((f) => "    ${f.type}? ${f.name},")
+        .map((f) {
+          final type = f.isEnum ? f.enumClassName : f.type;
+          return "    ${type}? ${f.name},";
+        })
         .join('\n');
+
     final copyWithReturnStr = fields
         .map((f) => "      ${f.name}: ${f.name} ?? this.${f.name},")
         .join('\n');
+
     final propsStr = fields.map((f) => "    ${f.name},").join('\n');
 
-    return content
+    var result = content;
+
+    // Injecter les imports des enums avant 'class '
+    final enumFields = fields.where((f) => f.isEnum).toList();
+    if (enumFields.isNotEmpty) {
+      final enumImports = enumFields
+          .map(
+            (f) =>
+                "import 'package:$projectName/features/$snakeName/domain/enums/${f.name}_enum.dart';",
+          )
+          .join('\n');
+
+      final classIndex = result.indexOf('class ');
+      if (classIndex != -1) {
+        final insertIndex = result.lastIndexOf('\n', classIndex);
+        if (insertIndex != -1) {
+          result =
+              '${result.substring(0, insertIndex + 1)}$enumImports\n${result.substring(insertIndex + 1)}';
+        }
+      }
+    }
+
+    return result
         .replaceFirst('// [FIELDS_ANCHOR]', '$fieldsStr\n  // [FIELDS_ANCHOR]')
         .replaceFirst(
           '// [CONSTRUCTOR_ANCHOR]',
@@ -31,13 +72,21 @@ class Injections {
         .replaceFirst('// [PROPS_ANCHOR]', '$propsStr\n    // [PROPS_ANCHOR]');
   }
 
-  static String injectModel(String content, List<Field> fields, String name) {
-    // Pour le constructeur : super.nom ----------
+  static String injectModel(
+    String content,
+    List<Field> fields,
+    String name,
+    String projectName,
+  ) {
+    final snakeName = name.toLowerCase();
+
     final constructorStr = fields.map((f) => "    super.${f.name},").join('\n');
 
-    // 2. Pour fromMap : nom: data['snake_name'] as Type? -----------
     final fromMapStr = fields
         .map((f) {
+          if (f.isEnum) {
+            return "      ${f.name}: data['${f.snakeName}'] != null ? ${f.enumClassName}.fromString(data['${f.snakeName}'] as String) : null,";
+          }
           if (f.type == 'DateTime') {
             return "      ${f.name}: data['${f.snakeName}'] != null ? DateTime.parse(data['${f.snakeName}']) : null,";
           }
@@ -45,9 +94,11 @@ class Injections {
         })
         .join('\n');
 
-    //our toMap : 'snake_name': nom ------
     final toMapStr = fields
         .map((f) {
+          if (f.isEnum) {
+            return "      '${f.snakeName}': ${f.name}?.value,";
+          }
           if (f.type == 'DateTime') {
             return "      '${f.snakeName}': ${f.name}?.toIso8601String(),";
           }
@@ -55,12 +106,33 @@ class Injections {
         })
         .join('\n');
 
-    //Pour fromEntity : nom: entity.nom --
     final fromEntityStr = fields
         .map((f) => "      ${f.name}: entity.${f.name},")
         .join('\n');
 
-    return content
+    var result = content;
+
+    // Injecter les imports des enums avant 'class '
+    final enumFields = fields.where((f) => f.isEnum).toList();
+    if (enumFields.isNotEmpty) {
+      final enumImports = enumFields
+          .map(
+            (f) =>
+                "import 'package:$projectName/features/$snakeName/domain/enums/${f.name}_enum.dart';",
+          )
+          .join('\n');
+
+      final classIndex = result.indexOf('class ');
+      if (classIndex != -1) {
+        final insertIndex = result.lastIndexOf('\n', classIndex);
+        if (insertIndex != -1) {
+          result =
+              '${result.substring(0, insertIndex + 1)}$enumImports\n${result.substring(insertIndex + 1)}';
+        }
+      }
+    }
+
+    return result
         .replaceFirst(
           '// [CONSTRUCTOR_ANCHOR]',
           '$constructorStr\n    // [CONSTRUCTOR_ANCHOR]',
@@ -83,14 +155,12 @@ class Injections {
     final filtersStr = fields
         .map((f) {
           String filterLogic;
-
           if (f.type == 'String') {
             filterLogic =
                 'query = query.ilike("${f.snakeName}", "%\$${f.name}%");';
           } else {
             filterLogic = 'query = query.eq("${f.snakeName}", ${f.name});';
           }
-
           return '''
         final ${f.name} = criteria.${f.name};
         if (${f.name} != null) {
