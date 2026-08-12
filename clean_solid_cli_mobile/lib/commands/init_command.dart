@@ -29,15 +29,14 @@ class InitCommand extends Command {
 
   @override
   void run() {
-    String projectName = argResults?['name'] as String;
+    final projectName =
+        (argResults!['name'] as String?) ??
+        (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
 
-    if (projectName == null || projectName.isEmpty) {
-      stdout.write('Nom du projet (snake_case) : ');
-      projectName = stdin.readLineSync()!.trim();
-    }
-
-    if (projectName == null || projectName.isEmpty) {
-      print('Nom du projet requis.');
+    if (projectName == null || projectName.trim().isEmpty) {
+      print('   Erreur : Veuillez spécifier un nom de projet.');
+      print('   Usage : cscm init <nom_du_projet>');
+      print('   Exemple : cscm init mon_app');
       exit(1);
     }
 

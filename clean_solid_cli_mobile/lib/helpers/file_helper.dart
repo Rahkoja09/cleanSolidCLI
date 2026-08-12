@@ -9,7 +9,7 @@ import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:path/path.dart' as p;
 
 class FileHelper {
-  static void generateFormTemplate({
+  static Future<void> generateFormTemplate({
     required String featureName,
     required String templateName,
     required String targetPath,

@@ -17,12 +17,12 @@ class CscmConfig {
 
   factory CscmConfig.fromMap(Map<String, dynamic> map) {
     return CscmConfig(
-      projectName: map['project_name'] as String? ?? '',
-      backend: map['backend'] as String? ?? 'supabase',
-      stateManagement: map['state_management'] as String? ?? 'riverpod',
-      di: map['di'] as String? ?? 'get_it',
-      useScreenUtil: map['use_screenutil'] as bool? ?? true,
-      useGoRouter: map['use_go_router'] as bool? ?? true,
+      projectName: (map['project_name'] as String?) ?? 'my_app',
+      backend: (map['backend'] as String?) ?? 'supabase',
+      stateManagement: (map['state_management'] as String?) ?? 'riverpod',
+      di: (map['di'] as String?) ?? 'get_it',
+      useScreenUtil: (map['use_screenutil'] as bool?) ?? true,
+      useGoRouter: (map['use_go_router'] as bool?) ?? true,
     );
   }
 

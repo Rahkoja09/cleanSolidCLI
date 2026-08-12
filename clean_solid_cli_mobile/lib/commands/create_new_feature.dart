@@ -83,7 +83,7 @@ class CreateNewFeature extends Command {
           architecture: arch,
         );
 
-        FileHelper.generateFormTemplate(
+        await FileHelper.generateFormTemplate(
           featureName: featureName,
           templateName: type.name,
           targetPath: targetPath,

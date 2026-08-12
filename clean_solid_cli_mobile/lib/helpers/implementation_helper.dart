@@ -11,6 +11,7 @@ class ImplementationHelper {
     required String projectName,
   }) {
     final fields = FieldParser.parse(fieldsRaw);
+    print("DEBUG: ${fields.length} fields, cwd=${Directory.current.path}");
     if (fields.isEmpty) return;
 
     final snakeName =
@@ -22,7 +23,6 @@ class ImplementationHelper {
       try {
         final filePath = _getFilePathForType(type, snakeName);
         final file = File(filePath);
-
         if (!file.existsSync()) continue;
 
         String content = file.readAsStringSync();
