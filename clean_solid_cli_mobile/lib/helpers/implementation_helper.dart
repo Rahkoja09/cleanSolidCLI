@@ -3,6 +3,7 @@ import 'package:clean_solid_cli_mobile/injections/injections.dart';
 import 'package:clean_solid_cli_mobile/models/field.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/utils/fieldParser.dart';
+import 'package:clean_solid_cli_mobile/utils/sql_generator.dart';
 import 'package:path/path.dart' as p;
 
 class ImplementationHelper {
@@ -10,6 +11,7 @@ class ImplementationHelper {
     required String featureName,
     required String fieldsRaw,
     required String projectName,
+    bool isUpdate = false, // NOUVEAU : true si cscm implemente
   }) {
     final fields = FieldParser.parse(fieldsRaw);
     if (fields.isEmpty) return;
@@ -58,7 +60,16 @@ class ImplementationHelper {
         print("Erreur lors de l'implémentation de ${type.name} : $e");
       }
     }
+
+    // 3. Generer la migration SQL
+    SqlGenerator.generateMigration(
+      featureName: featureName,
+      fields: fields,
+      isUpdate: isUpdate,
+    );
   }
+
+  // ... _generateEnumFiles, _buildEnumContent, _getFilePathForType IDENTIQUES
 
   static void _generateEnumFiles(List<Field> fields, String snakeName) {
     final enumFields = fields.where((f) => f.isEnum).toList();
