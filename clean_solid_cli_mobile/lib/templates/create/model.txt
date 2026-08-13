@@ -1,4 +1,4 @@
-import 'package:{{projectName}}/core/utils/typedef/typedefs.dart';
+import 'package:{{projectName}}/core/utils/typedefs.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
 
 class {{name}}Model extends {{name}}Entity {

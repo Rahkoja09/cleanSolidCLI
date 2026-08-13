@@ -63,8 +63,8 @@ class SqlGenerator {
     if (enumFields.isNotEmpty) {
       buffer.writeln('-- Enums');
       for (final f in enumFields) {
-        final values = f.enumValues
-            .map((v) => "'${v.toLowerCase()}'")
+        final values = f.dartEnumValues
+            .map((v) => "'${v}'")
             .join(', ');
         buffer.writeln(
           "DO \$\$ BEGIN\n"
@@ -88,7 +88,7 @@ class SqlGenerator {
       if (f.isEnum) {
         buffer.write(
           "  ${f.snakeName} ${f.snakeName}"
-          " DEFAULT '${f.enumValues.first.toLowerCase()}',\n",
+          " DEFAULT '${f.dartEnumValues.first}',\n",
         );
       } else if (f.isReference) {
         final refTable = '${f.referenceTargetSnake}s';
@@ -128,8 +128,8 @@ class SqlGenerator {
     if (enumFields.isNotEmpty) {
       buffer.writeln('-- New enum types');
       for (final f in enumFields) {
-        final values = f.enumValues
-            .map((v) => "'${v.toLowerCase()}'")
+        final values = f.dartEnumValues
+            .map((v) => "'${v}'")
             .join(', ');
         buffer.writeln(
           "DO \$\$ BEGIN\n"
@@ -149,7 +149,7 @@ class SqlGenerator {
         buffer.writeln(
           "ALTER TABLE $tableName ADD COLUMN IF NOT EXISTS"
           " ${f.snakeName} ${f.snakeName}"
-          " DEFAULT '${f.enumValues.first.toLowerCase()}';",
+          " DEFAULT '${f.dartEnumValues.first}';",
         );
       } else if (f.isReference) {
         final refTable = '${f.referenceTargetSnake}s';

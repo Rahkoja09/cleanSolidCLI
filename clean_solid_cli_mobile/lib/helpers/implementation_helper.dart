@@ -102,7 +102,7 @@ class ImplementationHelper {
     final values = field.dartEnumValues.map((v) => '  $v,').join('\n');
 
     return '''enum $className {
- $values
+$values
 
   String get value => name;
 
