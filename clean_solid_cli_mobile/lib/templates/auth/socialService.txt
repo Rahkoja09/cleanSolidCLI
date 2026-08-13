@@ -43,7 +43,7 @@ class SocialAuthService {
     } on AuthException catch (e) {
       throw ApiException(message: e.message, code: e.statusCode);
     } catch (e) {
-      throw UnexceptedException(message: e.toString());
+      throw UnexpectedException(message: e.toString());
     }
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:io';
+
 import 'package:args/command_runner.dart';
+import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
 import 'package:clean_solid_cli_mobile/utils/config_reader.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 
@@ -34,10 +36,13 @@ class InitCommand extends Command {
         (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
 
     if (projectName == null || projectName.trim().isEmpty) {
-      print('   Erreur : Veuillez spécifier un nom de projet.');
-      print('   Usage : cscm init <nom_du_projet>');
-      print('   Exemple : cscm init mon_app');
-      exit(1);
+      throw const CliException(
+        'Veuillez spécifier un nom de projet.'
+        '   Usage : cscm init <nom_du_projet>'
+        '   Exemple : cscm init mon_app',
+      );
+
+      throw Exception('Veuillez spécifier un nom de projet.');
     }
 
     final backend = argResults?['backend'] as String? ?? 'supabase';
@@ -47,17 +52,17 @@ class InitCommand extends Command {
     if (projectName.contains('..') ||
         projectName.contains('/') ||
         projectName.contains('\\')) {
-      print('  Erreur : Le nom du projet contient des caractères interdits.');
-      exit(1);
+      throw const CliException(
+        'Le nom du projet contient des caractères interdits.',
+      );
     }
 
     // Vérifier qu'on est pas dans un projet existant
     if (File('pubspec.yaml').existsSync()) {
-      print('Un projet Flutter existe déjà dans ce dossier.');
-      print(
+      throw CliException(
+        'Un projet Flutter existe déjà dans ce dossier.'
         '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
       );
-      exit(1);
     }
 
     print('\n itialisation du projet [$snakeName]...\n');
@@ -254,6 +259,8 @@ Future<void> init() async {
 
   // [INIT_ANCHOR]
 }
+
+// [INIT_METHOD_ANCHOR]
 ''';
 
   String _exceptions() => '''
@@ -291,9 +298,9 @@ class CacheException implements Exception {
 }
 
 /// Erreur inattendue (catch-all)
-class UnexceptedException implements Exception {
+class UnexpectedException implements Exception {
   final String message;
-  const UnexceptedException({required this.message});
+  const UnexpectedException({required this.message});
 }
 ''';
 
@@ -336,8 +343,8 @@ class CacheFailure extends Failure {
   const CacheFailure(super.message, super.code);
 }
 
-class UnexceptedFailure extends Failure {
-  const UnexceptedFailure(super.message, super.code);
+class UnexpectedFailure extends Failure {
+  const UnexpectedFailure(super.message, super.code);
 }
 ''';
 
@@ -345,7 +352,7 @@ class UnexceptedFailure extends Failure {
 import '../error/failures.dart';
 
 /// Mappe les failures en messages compréhensibles par l'utilisateur.
-class SuccesErrorManager {
+class SuccessErrorManager {
   static String getFriendlyErrorMessage(Failure failure, dynamic action) {
     // Messages spécifiques par code d'erreur
     switch (failure.code) {
@@ -464,7 +471,7 @@ class SuccessErrorListener extends ConsumerWidget {
             now.difference(lastErrorTime).inSeconds > 3) {
           ref.read(lastNetworkErrorTimeProvider.notifier).state = now;
           final msg =
-              SuccesErrorManager.getFriendlyErrorMessage(failure, action);
+              SuccessErrorManager.getFriendlyErrorMessage(failure, action);
           Snackbar.show(context,
               message: msg, isError: true, isPersistent: true);
         }

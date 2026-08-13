@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:args/command_runner.dart';
+import 'package:clean_solid_cli_mobile/utils/string_utils.dart';
 import 'package:path/path.dart' as p;
 
 class AddWidgetCommand extends Command {
@@ -58,8 +59,8 @@ class AddWidgetCommand extends Command {
       return;
     }
 
-    final className = _toPascalCase(widgetName);
-    final fileName = _toSnakeCase(widgetName);
+    final className = StringUtils.toPascalCase(widgetName);
+    final fileName = StringUtils.toSnakeCase(widgetName);
     final dir = Directory('lib/shared/widgets');
 
     if (!dir.existsSync()) dir.createSync(recursive: true);
@@ -121,20 +122,6 @@ class AddWidgetCommand extends Command {
   // ═══════════════════════════════════════════════════
   // HELPERS
   // ═══════════════════════════════════════════════════
-
-  String _toPascalCase(String input) {
-    return input
-        .split(RegExp(r'[_\-\s]+'))
-        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
-        .join();
-  }
-
-  String _toSnakeCase(String input) {
-    return input
-        .replaceAllMapped(RegExp(r'[A-Z]'), (m) => '_${m[0]!.toLowerCase()}')
-        .replaceAll(RegExp(r'[-\s]+'), '_')
-        .replaceAll(RegExp(r'^_+'), '');
-  }
 
   String _render(String template, String className) {
     switch (template) {

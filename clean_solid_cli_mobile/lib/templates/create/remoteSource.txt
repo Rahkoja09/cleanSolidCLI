@@ -26,7 +26,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
     } on PostgrestException catch (e) {
       throw ApiException(message: e.message, code: e.code ?? "POSTGREST_ERROR");
     } catch (e) {
-      throw UnexceptedException(message: "$e");
+      throw UnexpectedException(message: "$e");
     }
   }
 
@@ -46,7 +46,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
     } on PostgrestException catch (e) {
       throw ApiException(message: e.message, code: e.code ?? "UPDATE_ERROR");
     } catch (e) {
-      throw UnexceptedException(message: "$e");
+      throw UnexpectedException(message: "$e");
     }
   }
 
@@ -71,7 +71,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
     } on PostgrestException catch (e) {
       throw ApiException(message: e.message, code: e.code ?? "000");
     } catch (e) {
-      throw UnexceptedException(message: "$e");
+      throw UnexpectedException(message: "$e");
     }
   }
 
@@ -81,7 +81,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
       final data = await _client.from(_tableName).select().eq('id', id).single();
       return {{name}}Model.fromMap(data);
     } catch (e) {
-      throw UnexceptedException(message: "Élément introuvable : $e");
+      throw UnexpectedException(message: "Élément introuvable : $e");
     }
   }
 
@@ -90,7 +90,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
     try {
       await _client.from(_tableName).delete().eq("id", id);
     } catch (e) {
-      throw UnexceptedException(message: "Erreur lors de la suppression : $e");
+      throw UnexpectedException(message: "Erreur lors de la suppression : $e");
     }
   }
 }

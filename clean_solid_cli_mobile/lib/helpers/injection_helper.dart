@@ -23,6 +23,7 @@ class InjectionHelper {
     final projectName = GetProjetItem.getProjectName();
     final snakeName = featureName;
 
+    // Imports — le bloc contient l'ancre à la fin (comportement original)
     final imports = """
 import 'package:$projectName/features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
 import 'package:$projectName/features/$snakeName/data/source/${snakeName}_remote_source.dart';
@@ -30,10 +31,11 @@ import 'package:$projectName/features/$snakeName/domain/repository/${snakeName}_
 import 'package:$projectName/features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
 // [IMPORT_ANCHOR]""";
 
+    // Appel dans init() — le bloc contient l'ancre à la fin
     final initCall = "  _init$capitalizedName();\n  // [INIT_ANCHOR]";
 
+    // Méthode _init — injectée via INIT_METHOD_ANCHOR
     final initMethod = """
-
 Future<void> _init$capitalizedName() async {
   sl.registerLazySingleton<${capitalizedName}RemoteSource>(
     () => ${capitalizedName}RemoteSourceImpl(sl()),
@@ -43,12 +45,13 @@ Future<void> _init$capitalizedName() async {
   );
   sl.registerLazySingleton(() => ${capitalizedName}Usecases(sl()));
 }
-""";
 
-    // 4. Injection si existant -------
-    content = content.replaceFirst('// [IMPORT_ANCHOR]', imports);
-    content = content.replaceFirst('// [INIT_ANCHOR]', initCall);
-    content = content + initMethod;
+// [INIT_METHOD_ANCHOR]""";
+
+    // Injections avec warning si ancre manquante
+    content = _safeReplace(content, '// [IMPORT_ANCHOR]', imports, 'injection_container');
+    content = _safeReplace(content, '  // [INIT_ANCHOR]', initCall, 'injection_container');
+    content = _safeReplace(content, '// [INIT_METHOD_ANCHOR]', initMethod, 'injection_container');
 
     file.writeAsStringSync(content);
     print(" Injection Container mis à jour avec succès !");
@@ -65,6 +68,8 @@ final sl = GetIt.instance;
 Future<void> init() async {
   // [INIT_ANCHOR]
 }
+
+// [INIT_METHOD_ANCHOR]
 """);
   }
 
@@ -82,7 +87,6 @@ Future<void> init() async {
     String content = file.readAsStringSync();
     final projectName = GetProjetItem.getProjectName();
 
-    // 1. Gestion des Imports spécifiques à l'Auth
     String authImports = "";
     if (!content.contains('auth_remote_source.dart')) {
       authImports = """
@@ -104,36 +108,47 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
 
     if (authImports.isNotEmpty) {
       authImports += "\n// [IMPORT_ANCHOR]";
-      content = content.replaceFirst('// [IMPORT_ANCHOR]', authImports);
+      content = _safeReplace(content, '// [IMPORT_ANCHOR]', authImports, 'injection_container (auth)');
     }
 
-    // 2. Appel de l'initialisation dans init()
     if (!content.contains('_initAuth()')) {
       final initCall = "  _initAuth();\n  // [INIT_ANCHOR]";
-      content = content.replaceFirst('// [INIT_ANCHOR]', initCall);
+      content = _safeReplace(content, '  // [INIT_ANCHOR]', initCall, 'injection_container (auth)');
     }
 
-    // 3. Construction de la méthode _initAuth()
-    // Si la méthode existe déjà, on va devoir la remplacer pour mettre à jour les dépendances
     final newAuthMethod = _generateAuthInitMethod(
       useEmail: useEmail,
       useSocial: useSocial,
     );
 
     if (content.contains('Future<void> _initAuth()')) {
-      // Remplacement de l'ancienne méthode par la nouvelle (Update)
       final regExp = RegExp(
         r'Future<void> _initAuth\(\) async \{[\s\S]*?\}',
         multiLine: true,
       );
       content = content.replaceFirst(regExp, newAuthMethod);
     } else {
-      // Ajout simple à la fin du fichier (Creation)
-      content = "${content.trim()}\n$newAuthMethod";
+      final authBlock = "$newAuthMethod\n// [INIT_METHOD_ANCHOR]";
+      content = _safeReplace(content, '// [INIT_METHOD_ANCHOR]', authBlock, 'injection_container (auth)');
     }
 
     file.writeAsStringSync(content);
     print(" Injection Container : Configuration Auth mise à jour !");
+  }
+
+  /// Remplace une ancre avec warning si absente. L'ancre de remplacement
+  /// doit être incluse dans [replacement] par l'appelant.
+  static String _safeReplace(
+    String content,
+    String anchor,
+    String replacement,
+    String context,
+  ) {
+    if (!content.contains(anchor)) {
+      print('  ⚠  Ancre "$anchor" introuvable dans $context. Injection ignorée.');
+      return content;
+    }
+    return content.replaceFirst(anchor, replacement);
   }
 
   static String _generateAuthInitMethod({
@@ -141,7 +156,7 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
     required bool useSocial,
   }) {
     String services = "";
-    String remoteSourceParams = "sl()"; // sl() pour le SupabaseClient
+    String remoteSourceParams = "sl()";
 
     if (useSocial) {
       services +=
@@ -155,7 +170,7 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
 
     return """
 Future<void> _initAuth() async {
-$services
+ $services
   sl.registerLazySingleton<AuthRemoteSource>(
     () => AuthRemoteSourceImpl($remoteSourceParams),
   );

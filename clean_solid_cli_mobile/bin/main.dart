@@ -7,6 +7,7 @@ import 'package:clean_solid_cli_mobile/commands/config_command.dart';
 import 'package:clean_solid_cli_mobile/commands/init_command.dart';
 import 'package:clean_solid_cli_mobile/commands/generate_all_command.dart';
 import 'package:clean_solid_cli_mobile/commands/add_widget_command.dart';
+import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
 
 void main(List<String> arguments) async {
   final runner = CommandRunner(
@@ -32,6 +33,9 @@ void main(List<String> arguments) async {
   } on UsageException catch (e) {
     print(e);
     exitCode = 64;
+  } on CliException catch (e) {
+    print("  Erreur : ${e.message}");
+    exitCode = e.exitCode;
   } catch (e) {
     print("  Erreur : $e");
     exitCode = 1;

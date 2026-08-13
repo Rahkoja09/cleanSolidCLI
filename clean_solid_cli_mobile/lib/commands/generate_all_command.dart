@@ -8,7 +8,8 @@ import 'package:clean_solid_cli_mobile/helpers/file_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/implementation_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/injection_helper.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
-import 'package:clean_solid_cli_mobile/utils/fieldParser.dart';
+import 'package:clean_solid_cli_mobile/utils/field_parser.dart';
+import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
 import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 
@@ -42,29 +43,28 @@ class GenerateAllCommand extends Command {
       print(
         '   Exemple : https://github.com/Rahkoja09/cleanSolidCLI#generate-all',
       );
-      exit(1);
+      throw Exception('Fichier $filePath introuvable.');
     }
 
     // 1. Lire et parser le YAML
     final yamlContent = file.readAsStringSync();
     final yaml = loadYaml(yamlContent);
     if (yaml is! Map) {
-      print('  Erreur : le fichier YAML doit contenir un dictionnaire.');
-      exit(1);
+      throw const CliException('Le fichier YAML doit contenir un dictionnaire.');
     }
     final yamlMap = yaml;
     final featuresRaw = yamlMap['features'];
 
     if (featuresRaw == null) {
       print(' Clé "features" introuvable dans $filePath.');
-      exit(1);
+      throw Exception('Clé "features" introuvable.');
     }
 
     final features = _parseFeatures(featuresRaw);
 
     if (features.isEmpty) {
       print(' Aucune feature trouvée dans $filePath.');
-      exit(1);
+      throw Exception('Aucune feature trouvée.');
     }
 
     // 2. Tri topologique (les références sont générées en premier)
@@ -72,7 +72,7 @@ class GenerateAllCommand extends Command {
 
     if (sorted == null) {
       print(' Cycle de dépendances détecté entre les features !');
-      exit(1);
+      throw Exception('Cycle de dépendances détecté.');
     }
 
     // 3. Préparer l'architecture

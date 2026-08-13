@@ -98,7 +98,7 @@ class ErrorListenerHelper {
       if (isNetworkError) {
         if (lastErrorTime == null || now.difference(lastErrorTime).inSeconds > 3) {
           ref.read(lastNetworkErrorTimeProvider.notifier).state = now;
-          final msg = SuccesErrorManager.getFriendlyErrorMessage(failure, action);
+          final msg = SuccessErrorManager.getFriendlyErrorMessage(failure, action);
           Snackbar.show(context, message: msg, isError: true, isPersistent: true);
         }
       } else {

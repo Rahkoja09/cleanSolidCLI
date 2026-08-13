@@ -3,7 +3,7 @@ import 'package:clean_solid_cli_mobile/injections/injections.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/models/field.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
-import 'package:clean_solid_cli_mobile/utils/fieldParser.dart';
+import 'package:clean_solid_cli_mobile/utils/field_parser.dart';
 import 'package:clean_solid_cli_mobile/utils/sql_generator.dart';
 import 'package:path/path.dart' as p;
 

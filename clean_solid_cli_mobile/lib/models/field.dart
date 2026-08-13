@@ -1,3 +1,5 @@
+import 'package:clean_solid_cli_mobile/utils/string_utils.dart';
+
 class Field {
   final String name; // ex: birthDate
   final String type; // ex: DateTime ou Statut (pour enum)
@@ -16,7 +18,7 @@ class Field {
     this.isReference = false,
     this.referenceTarget = '',
     this.referenceTargetSnake = '',
-  }) : snakeName = _convertToSnakeCase(name);
+  }) : snakeName = StringUtils.toSnakeCase(name);
 
   /// Nom du champ FK en camelCase (ex: "boutique" → "boutiqueId")
   String get referenceIdName => '${name}Id';
@@ -39,15 +41,6 @@ class Field {
       if (v.isEmpty) return v;
       return '${v[0].toLowerCase()}${v.substring(1)}';
     }).toList();
-  }
-
-  static String _convertToSnakeCase(String input) {
-    return input
-        .replaceAllMapped(
-          RegExp(r'([a-z0-9])([A-Z])'),
-          (Match m) => '${m[1]}_${m[2]!.toLowerCase()}',
-        )
-        .toLowerCase();
   }
 
   @override
