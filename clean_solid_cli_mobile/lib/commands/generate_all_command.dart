@@ -47,7 +47,12 @@ class GenerateAllCommand extends Command {
 
     // 1. Lire et parser le YAML
     final yamlContent = file.readAsStringSync();
-    final yamlMap = loadYaml(yamlContent) as Map;
+    final yaml = loadYaml(yamlContent);
+    if (yaml is! Map) {
+      print('  Erreur : le fichier YAML doit contenir un dictionnaire.');
+      exit(1);
+    }
+    final yamlMap = yaml;
     final featuresRaw = yamlMap['features'];
 
     if (featuresRaw == null) {
@@ -90,10 +95,10 @@ class GenerateAllCommand extends Command {
     Architectures arch,
     String projectName,
   ) {
-    final capitalizedName = ReformateClassName.capitalizeClassName(
-      featureName: feature.name,
-    );
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(feature.name);
+    final capitalizedName = ReformateClassName.capitalizeClassName(
+      featureName: snakeFeatureName,
+    );
 
     print(' ${capitalizedName}...');
 

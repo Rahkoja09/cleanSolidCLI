@@ -33,4 +33,4 @@ enum AuthFileType {
 
 enum AuthEmailType { emailRemote }
 
-enum AuthSocilaType { socialRemote }
+enum AuthSocialType { socialRemote }

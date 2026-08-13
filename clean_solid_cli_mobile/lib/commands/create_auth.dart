@@ -25,7 +25,7 @@ class CreateAuth extends Command {
   }
 
   @override
-  void run() async {
+  Future<void> run() async {
     final bool useEmail = argResults?['email'] ?? true;
     final bool useSocial = argResults?['social'] ?? false;
 

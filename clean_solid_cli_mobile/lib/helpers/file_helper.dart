@@ -36,10 +36,10 @@ class FileHelper {
     String content = templateFile.readAsStringSync();
 
     final projectName = GetProjetItem.getProjectName();
-    final capitalizedClassName = ReformateClassName.capitalizeClassName(
-      featureName: featureName,
-    );
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
+    final capitalizedClassName = ReformateClassName.capitalizeClassName(
+      featureName: snakeFeatureName,
+    );
 
     content = content.replaceAll("{{projectName}}", projectName);
     content = content.replaceAll("{{name}}", capitalizedClassName);
@@ -63,6 +63,14 @@ class FileHelper {
     required FileTemplateType templateType,
     required Architectures architecture,
   }) {
+    // Validation anti path traversal --------
+    if (featureName.contains('..') ||
+        featureName.contains('/') ||
+        featureName.contains('\\')) {
+      throw ArgumentError(
+        'Le nom de feature contient des caractères interdits.',
+      );
+    }
     String directoryPath;
     String fileName;
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);

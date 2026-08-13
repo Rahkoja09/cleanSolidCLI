@@ -37,7 +37,7 @@ class CreateNewFeature extends Command {
   }
 
   @override
-  void run() async {
+  Future<void> run() async {
     final layers = CleanLayers("data", "domain", "presentation");
     final arch = Architectures("Clean", "clean architecture + SOLIDE", layers);
 
@@ -59,15 +59,24 @@ class CreateNewFeature extends Command {
       }
     } else {
       // --- MODE FLAGS ---
-      featureName = argResults!.rest.first.toLowerCase();
+      featureName = argResults!.rest.first;
       fieldsInput = argResults?['fields'] as String?;
+
+      // Validation anti path traversal
+      if (featureName.contains('..') ||
+          featureName.contains('/') ||
+          featureName.contains('\\')) {
+        print(
+          '  Erreur : Le nom de feature contient des caractères interdits.',
+        );
+        return;
+      }
     }
 
-    final capitalizedName = ReformateClassName.capitalizeClassName(
-      featureName: featureName,
-    );
-
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
+    final capitalizedName = ReformateClassName.capitalizeClassName(
+      featureName: snakeFeatureName,
+    );
 
     print(
       "\n (working) : Génération de la structure pour : $capitalizedName...\n",

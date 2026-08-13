@@ -19,7 +19,13 @@ class ConfigReader {
     }
 
     final content = file.readAsStringSync();
-    final yamlMap = loadYaml(content) as Map;
+    final yaml = loadYaml(content);
+    if (yaml is! Map) {
+      throw Exception(
+        '$configFileName invalide : le contenu doit être un dictionnaire YAML.',
+      );
+    }
+    final yamlMap = yaml;
 
     return CscmConfig.fromMap(Map<String, dynamic>.from(yamlMap));
   }

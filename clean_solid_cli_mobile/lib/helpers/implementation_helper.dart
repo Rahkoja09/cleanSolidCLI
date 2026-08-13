@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:clean_solid_cli_mobile/injections/injections.dart';
+import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/models/field.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/utils/fieldParser.dart';
@@ -16,7 +17,7 @@ class ImplementationHelper {
     final fields = FieldParser.parse(fieldsRaw);
     if (fields.isEmpty) return;
 
-    final snakeName = featureName.toLowerCase();
+    final snakeName = ReformateClassName.formatToSnakeCase(featureName);
     final pascalName = featureName;
 
     // 1. Generer les fichiers enum
@@ -107,10 +108,10 @@ class ImplementationHelper {
 
   static $className? fromString(String? value) {
     if (value == null) return null;
-    return $className.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => throw ArgumentError('Unknown $className value: \$value'),
-    );
+    for (final e in $className.values) {
+      if (e.value == value) return e;
+    }
+    return null;
   }
 }
 ''';

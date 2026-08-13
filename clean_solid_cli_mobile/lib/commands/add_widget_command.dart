@@ -50,6 +50,13 @@ class AddWidgetCommand extends Command {
       print('    cscm add:widget confirm-dialog --type dialog');
       return;
     }
+    // Validation anti path traversal
+    if (widgetName.contains('..') ||
+        widgetName.contains('/') ||
+        widgetName.contains('\\')) {
+      print('  Erreur : Le nom du widget contient des caractères interdits.');
+      return;
+    }
 
     final className = _toPascalCase(widgetName);
     final fileName = _toSnakeCase(widgetName);

@@ -43,6 +43,14 @@ class InitCommand extends Command {
     final backend = argResults?['backend'] as String? ?? 'supabase';
     final snakeName = projectName.replaceAll(' ', '_').toLowerCase();
 
+    // Validation anti path traversal
+    if (projectName.contains('..') ||
+        projectName.contains('/') ||
+        projectName.contains('\\')) {
+      print('  Erreur : Le nom du projet contient des caractères interdits.');
+      exit(1);
+    }
+
     // Vérifier qu'on est pas dans un projet existant
     if (File('pubspec.yaml').existsSync()) {
       print('Un projet Flutter existe déjà dans ce dossier.');
@@ -94,10 +102,10 @@ class InitCommand extends Command {
       '$libDir/core/router',
       '$libDir/core/utils',
       '$libDir/core/mainErrorListener',
-      '$libDir/shared/widget/popup',
-      '$libDir/shared/widget/loading',
-      '$libDir/shared/widget/buttons',
-      '$libDir/shared/widget/inputs',
+      '$libDir/shared/widgets/popup',
+      '$libDir/shared/widgets/loading',
+      '$libDir/shared/widgets/buttons',
+      '$libDir/shared/widgets/inputs',
       '$libDir/features',
       '$libDir/assets/medias/icons',
       '$libDir/assets/medias/animations',
@@ -145,10 +153,10 @@ class InitCommand extends Command {
     );
 
     // --- SHARED WIDGETS ---
-    _writeFile('$libDir/shared/widget/popup/show_toast.dart', _showToast());
-    _writeFile('$libDir/shared/widget/popup/snackbar.dart', _snackbar());
+    _writeFile('$libDir/shared/widgets/popup/show_toast.dart', _showToast());
+    _writeFile('$libDir/shared/widgets/popup/snackbar.dart', _snackbar());
     _writeFile(
-      '$libDir/shared/widget/loading/loading_widget.dart',
+      '$libDir/shared/widgets/loading/loading_widget.dart',
       _loadingWidget(),
     );
 
@@ -429,8 +437,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:$name/core/error/failures.dart';
 import 'package:$name/core/error/error_manager.dart';
-import 'package:$name/shared/widget/popup/show_toast.dart';
-import 'package:$name/shared/widget/popup/snackbar.dart';
+import 'package:$name/shared/widgets/popup/show_toast.dart';
+import 'package:$name/shared/widgets/popup/snackbar.dart';
 import 'package:$name/core/mainErrorListener/last_network_time_provider.dart';
 
 class SuccessErrorListener extends ConsumerWidget {
