@@ -1,6 +1,4 @@
 import 'package:args/command_runner.dart';
-import 'package:clean_solid_cli_mobile/architectures/architectures.dart';
-import 'package:clean_solid_cli_mobile/architectures/clean/layers/clean_layers.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/helpers/error_listener_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/file_helper.dart';
@@ -38,9 +36,6 @@ class CreateNewFeature extends Command {
 
   @override
   Future<void> run() async {
-    final layers = CleanLayers("data", "domain", "presentation");
-    final arch = Architectures("Clean", "clean architecture + SOLIDE", layers);
-
     final isInteractive = argResults?['interactive'] as bool? ?? false;
     String featureName;
     String? fieldsInput;
@@ -79,7 +74,7 @@ class CreateNewFeature extends Command {
     );
 
     print(
-      "\n (working) : Génération de la structure pour : $capitalizedName...\n",
+      "\n  : Génération de la structure pour : $capitalizedName...\n",
     );
 
     for (var type in FileTemplateType.values) {
@@ -89,7 +84,6 @@ class CreateNewFeature extends Command {
         final targetPath = FileHelper.generateAndGetTargetPath(
           featureName: featureName,
           templateType: type,
-          architecture: arch,
         );
 
         await FileHelper.generateFormTemplate(
@@ -103,7 +97,7 @@ class CreateNewFeature extends Command {
     }
 
     if (fieldsInput != null && fieldsInput.isNotEmpty) {
-      print("\n Implémentation des entités...\n");
+      print("\n  Implémentation des entités...\n");
 
       try {
         final projectName = GetProjetItem.getProjectName();

@@ -749,6 +749,10 @@ app.*.map.json
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
@@ -759,8 +763,28 @@ linter:
   rules:
     prefer_const_constructors: true
     prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
     avoid_print: true
     prefer_single_quotes: true
     always_declare_return_types: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    unnecessary_null_comparison: true
+    prefer_null_aware_operators: true
+    avoid_unnecessary_containers: true
+    avoid_empty_else: true
+    prefer_is_empty: true
+    prefer_is_not_empty: true
+    prefer_is_not_operator: true
+    avoid_redundant_argument_values: true
+    cancel_subscriptions: true
+    close_sinks: true
+    use_key_in_widget_constructors: true
+    prefer_const_constructors_in_immutables: true
+    sized_box_for_whitespace: true
+    unnecessary_overrides: true
+    unnecessary_this: true
+    prefer_typing_uninitialized_variables: true
+    require_trailing_commas: true
 ''';
 }

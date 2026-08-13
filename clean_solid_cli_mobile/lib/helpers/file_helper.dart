@@ -1,10 +1,8 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:clean_solid_cli_mobile/architectures/architectures.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
-import 'package:clean_solid_cli_mobile/utils/join_path.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:path/path.dart' as p;
 
@@ -20,16 +18,13 @@ class FileHelper {
     final resolvedUri = await Isolate.resolvePackageUri(packageUri);
 
     if (resolvedUri == null) {
-      print(
-        "Impossible de localiser le package pour le template $templateName",
-      );
+      print("  Impossible de résoudre le template $templateName");
       return;
     }
 
     final templateFile = File(resolvedUri.toFilePath());
-
     if (!templateFile.existsSync()) {
-      print("Le template n'existe pas à : ${templateFile.path}");
+      print("  Le template n'existe pas : ${templateFile.path}");
       return;
     }
 
@@ -46,24 +41,19 @@ class FileHelper {
     content = content.replaceAll("{{snakeName}}", snakeFeatureName);
 
     final file = File(targetPath);
-
     if (file.existsSync()) {
-      print(
-        "Le fichier ${p.basename(targetPath)} existe déjà. Saut de l'étape.",
-      );
+      print("  ${p.basename(targetPath)} existe déjà. Saut.");
       return;
     }
 
     file.writeAsStringSync(content);
-    print("Fichier généré : ${p.basename(targetPath)}");
+    print("  Fichier généré : ${p.basename(targetPath)}");
   }
 
   static String generateAndGetTargetPath({
     required String featureName,
     required FileTemplateType templateType,
-    required Architectures architecture,
   }) {
-    // Validation anti path traversal --------
     if (featureName.contains('..') ||
         featureName.contains('/') ||
         featureName.contains('\\')) {
@@ -71,130 +61,60 @@ class FileHelper {
         'Le nom de feature contient des caractères interdits.',
       );
     }
+
+    final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
+    final featureRoot = p.join("lib", "features", snakeFeatureName);
+
     String directoryPath;
     String fileName;
-    final snakeFeatureName = ReformateClassName.formatToSnakeCase(featureName);
-    final defaultFeaturePath = p.join("lib", "features");
-    final String featureRoot = p.join(defaultFeaturePath, snakeFeatureName);
 
     switch (templateType) {
       case FileTemplateType.remoteSource:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDataName,
-          "source",
-        ]);
+        directoryPath = p.join(featureRoot, "data", "source");
         fileName = "${snakeFeatureName}_remote_source.dart";
-        break;
-
       case FileTemplateType.controller:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getPresentationName,
-          "controller",
-        ]);
+        directoryPath = p.join(featureRoot, "presentation", "controller");
         fileName = "${snakeFeatureName}_controller.dart";
-        break;
-
       case FileTemplateType.model:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDataName,
-          "model",
-        ]);
+        directoryPath = p.join(featureRoot, "data", "model");
         fileName = "${snakeFeatureName}_model.dart";
-        break;
-
       case FileTemplateType.usecase:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDomainName,
-          "usecases",
-        ]);
+        directoryPath = p.join(featureRoot, "domain", "usecases");
         fileName = "${snakeFeatureName}_usecases.dart";
-        break;
-
       case FileTemplateType.states:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getPresentationName,
-          "states",
-        ]);
+        directoryPath = p.join(featureRoot, "presentation", "states");
         fileName = "${snakeFeatureName}_states.dart";
-        break;
-
       case FileTemplateType.repository:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDomainName,
-          "repository",
-        ]);
+        directoryPath = p.join(featureRoot, "domain", "repository");
         fileName = "${snakeFeatureName}_repository.dart";
-        break;
-
       case FileTemplateType.repositoryImpl:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDataName,
-          "repository",
-        ]);
+        directoryPath = p.join(featureRoot, "data", "repository");
         fileName = "${snakeFeatureName}_repository_impl.dart";
-        break;
-
       case FileTemplateType.pages:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getPresentationName,
-          "pages",
-        ]);
+        directoryPath = p.join(featureRoot, "presentation", "pages");
         fileName = "${snakeFeatureName}_page.dart";
-        break;
-
       case FileTemplateType.di:
-        directoryPath = JoinPath.joinAllPath(["lib", "core", "di"]);
+        directoryPath = p.join("lib", "core", "di");
         fileName = "injection_container.dart";
-        break;
-
       case FileTemplateType.entity:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDomainName,
-          "entity",
-        ]);
+        directoryPath = p.join(featureRoot, "domain", "entity");
         fileName = "${snakeFeatureName}_entity.dart";
-        break;
       case FileTemplateType.action:
-        directoryPath = JoinPath.joinAllPath([
-          featureRoot,
-          architecture.getLayers.getDomainName,
-          "actions",
-        ]);
+        directoryPath = p.join(featureRoot, "domain", "actions");
         fileName = "${snakeFeatureName}_actions.dart";
-        break;
       case FileTemplateType.successErrorListener:
-        directoryPath = JoinPath.joinAllPath([
-          "lib",
-          "core",
-          "mainErrorListener",
-        ]);
+        directoryPath = p.join("lib", "core", "mainErrorListener");
         fileName = "success_error_listener.dart";
-        break;
       case FileTemplateType.lastNetworkTimeProvider:
-        directoryPath = JoinPath.joinAllPath([
-          "lib",
-          "core",
-          "mainErrorListener",
-        ]);
+        directoryPath = p.join("lib", "core", "mainErrorListener");
         fileName = "last_network_time_provider.dart";
-        break;
     }
 
-    final finalDirectory = Directory(directoryPath);
-
-    if (!finalDirectory.existsSync()) {
-      finalDirectory.createSync(recursive: true);
+    final dir = Directory(directoryPath);
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
     }
 
-    return p.join(finalDirectory.path, fileName);
+    return p.join(directoryPath, fileName);
   }
 }

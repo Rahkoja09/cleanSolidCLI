@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:clean_solid_cli_mobile/models/field.dart';
 
 class SqlGenerator {
+  static int _migrationCounter = 0;
   /// Génère la migration SQL.
   /// [isUpdate] = true si appelé depuis cscm implemente (ALTER TABLE)
   /// [isUpdate] = false si appelé depuis cscm create (CREATE TABLE)
@@ -31,14 +32,17 @@ class SqlGenerator {
     }
 
     final filePath = '$migrationsDir/$fileName';
-    final file = File(filePath);
+    var finalPath = filePath;
+    var finalFileName = fileName;
+    final file = File(finalPath);
     if (file.existsSync()) {
-      print('  Migration SQL existe déjà : $fileName');
-      return;
+      _migrationCounter++;
+      finalFileName = '${timestamp}_${_migrationCounter}${isUpdate ? "_alter" : "_create"}_${tableName}.sql';
+      finalPath = '$migrationsDir/$finalFileName';
     }
 
     file.writeAsStringSync(content);
-    print('  Migration SQL générée : $fileName');
+    print('  Migration SQL générée : $finalFileName');
   }
 
   // ═══════════════════════════════════════════════════

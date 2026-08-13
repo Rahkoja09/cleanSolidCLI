@@ -1,8 +1,7 @@
+import 'dart:collection';
 import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:yaml/yaml.dart';
-import 'package:clean_solid_cli_mobile/architectures/architectures.dart';
-import 'package:clean_solid_cli_mobile/architectures/clean/layers/clean_layers.dart';
 import 'package:clean_solid_cli_mobile/helpers/error_listener_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/file_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/implementation_helper.dart';
@@ -50,7 +49,9 @@ class GenerateAllCommand extends Command {
     final yamlContent = file.readAsStringSync();
     final yaml = loadYaml(yamlContent);
     if (yaml is! Map) {
-      throw const CliException('Le fichier YAML doit contenir un dictionnaire.');
+      throw const CliException(
+        'Le fichier YAML doit contenir un dictionnaire.',
+      );
     }
     final yamlMap = yaml;
     final featuresRaw = yamlMap['features'];
@@ -77,14 +78,11 @@ class GenerateAllCommand extends Command {
 
     // 3. Préparer l'architecture
     final projectName = GetProjetItem.getProjectName();
-    final layers = CleanLayers('data', 'domain', 'presentation');
-    final arch = Architectures('Clean', 'clean architecture + SOLIDE', layers);
-
     print('\n Génération de ${sorted.length} feature(s)...\n');
 
     // 4. Générer chaque feature
     for (final feature in sorted) {
-      _generateFeature(feature, arch, projectName);
+      _generateFeature(feature, projectName);
     }
 
     print(' Toutes les features ont été générées avec succès !');
@@ -92,7 +90,7 @@ class GenerateAllCommand extends Command {
 
   void _generateFeature(
     _FeatureDef feature,
-    Architectures arch,
+    
     String projectName,
   ) {
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(feature.name);
@@ -110,7 +108,6 @@ class GenerateAllCommand extends Command {
         final targetPath = FileHelper.generateAndGetTargetPath(
           featureName: feature.name,
           templateType: type,
-          architecture: arch,
         );
 
         FileHelper.generateFormTemplate(
@@ -131,7 +128,7 @@ class GenerateAllCommand extends Command {
           fieldsRaw: feature.fieldsRaw,
           projectName: projectName,
         );
-        print(' Champs injectés.');
+        print('  Champs injectés.');
       } catch (e) {
         print(" Erreur d'implémentation : $e");
       }
@@ -254,7 +251,7 @@ class GenerateAllCommand extends Command {
     }
 
     // Queue des noeuds sans dépendances
-    final queue = <String>[];
+    final queue = ListQueue<String>();
     for (final entry in inDegree.entries) {
       if (entry.value == 0) queue.add(entry.key);
     }
@@ -262,7 +259,7 @@ class GenerateAllCommand extends Command {
     final sortedKeys = <String>[];
 
     while (queue.isNotEmpty) {
-      final current = queue.removeAt(0);
+      final current = queue.removeFirst();
       sortedKeys.add(current);
 
       // Réduire l'in-degree de tous ceux qui dépendent de current

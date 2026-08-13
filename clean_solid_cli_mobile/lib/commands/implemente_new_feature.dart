@@ -52,7 +52,7 @@ class ImplementeNewFeature extends Command {
     }
 
     print(
-      "\n (working) : Implémentation pour la feature : ${featureName.toUpperCase()}...\n",
+      "\n  : Implémentation pour la feature : ${featureName.toUpperCase()}...\n",
     );
 
     try {
