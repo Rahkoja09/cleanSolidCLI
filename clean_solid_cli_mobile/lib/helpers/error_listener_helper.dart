@@ -66,18 +66,17 @@ class ErrorListenerHelper {
           );
         }
       }
-    });
+    });''';
 
-    return child;''';
-
-    if (content.contains('return child;')) {
-      content = content.replaceFirst('return child;', listenerBlock);
+    if (content.contains('// [LISTENERS_ANCHOR]')) {
+      content = content.replaceFirst(
+        '// [LISTENERS_ANCHOR]',
+        '$listenerBlock\n    // [LISTENERS_ANCHOR]',
+      );
       file.writeAsStringSync(content);
       print("success_error_listener.dart mis à jour pour $capitalizedName.");
     } else {
-      print(
-        "Erreur : Structure du build() invalide (return child; introuvable).",
-      );
+      print("Erreur : // [LISTENERS_ANCHOR] introuvable dans le fichier.");
     }
   }
 
@@ -107,6 +106,8 @@ class ErrorListenerHelper {
         showToast(context, description: msg, isError: true, title: title);
       }
     }
+
+    // [LISTENERS_ANCHOR]
 ''';
 
     if (content.contains(buildStart)) {

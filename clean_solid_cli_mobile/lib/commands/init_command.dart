@@ -577,11 +577,10 @@ import 'package:$name/config/theme/theme_provider.dart';
 import 'package:$name/core/router/app_router.dart';
 import 'package:$name/core/di/injection_container.dart' as di;${hasSupabase ? "\nimport 'package:supabase_flutter/supabase_flutter.dart';" : ''}
 import 'package:toastification/toastification.dart';
- ${hasSupabase ? "import 'package:flutter_dotenv/flutter_dotenv.dart';" : ''}
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
- ${hasSupabase ? "\n  await dotenv.load(fileName: '.env');\n\n  await Supabase.initialize(\n    url: SupabaseApiConstants.apiUrl,\n    anonKey: SupabaseApiConstants.apiKey,\n    authOptions: const FlutterAuthClientOptions(\n      autoRefreshToken: true,\n      detectSessionInUri: true,\n    ),\n  );" : ""}
+ ${hasSupabase ? "\n  await Supabase.initialize(\n    url: SupabaseApiConstants.apiUrl,\n    anonKey: SupabaseApiConstants.apiKey,\n    authOptions: const FlutterAuthClientOptions(\n      autoRefreshToken: true,\n      detectSessionInUri: true,\n    ),\n  );" : ""}
 
   await di.init();
 
@@ -644,7 +643,7 @@ class MyApp extends ConsumerWidget {
     ];
 
     if (backend == 'supabase') {
-      deps.addAll(['  supabase_flutter: ^2.9.0', '  flutter_dotenv: ^6.0.0']);
+      deps.addAll(['  supabase_flutter: ^2.9.0']);
     }
 
     return '''
@@ -671,7 +670,6 @@ flutter:
     - assets/medias/icons/
     - assets/medias/animations/
     - assets/theme/
-    - .env
 ''';
   }
 
