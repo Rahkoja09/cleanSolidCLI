@@ -6,6 +6,7 @@ import 'package:clean_solid_cli_mobile/commands/implemente_new_feature.dart';
 import 'package:clean_solid_cli_mobile/commands/config_command.dart';
 import 'package:clean_solid_cli_mobile/commands/init_command.dart';
 import 'package:clean_solid_cli_mobile/commands/generate_all_command.dart';
+import 'package:clean_solid_cli_mobile/commands/add_widget_command.dart';
 
 void main(List<String> arguments) async {
   final runner = CommandRunner(
@@ -25,6 +26,7 @@ void main(List<String> arguments) async {
   runner.addCommand(ImplementeNewFeature());
   runner.addCommand(GenerateAllCommand());
   runner.addCommand(CreateAuth());
+  runner.addCommand(AddWidgetCommand());
   try {
     await runner.run(arguments);
   } on UsageException catch (e) {
