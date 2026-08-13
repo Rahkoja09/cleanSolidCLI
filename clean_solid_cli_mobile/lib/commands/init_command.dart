@@ -678,6 +678,7 @@ dev_dependencies:
     sdk: flutter
   build_runner: ^2.4.8
   flutter_launcher_icons: ^0.14.4
+  mocktail: ^1.0.4
 
 flutter:
   uses-material-design: true

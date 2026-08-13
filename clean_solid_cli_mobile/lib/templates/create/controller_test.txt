@@ -1,0 +1,94 @@
+import 'package:dartz/dartz.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:{{projectName}}/core/error/failures.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/domain/usecases/{{snakeName}}_usecases.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/presentation/controller/{{snakeName}}_controller.dart';
+
+class Mock{{name}}Usecases extends Mock implements {{name}}Usecases {}
+
+void main() {
+  late {{name}}Controller sut;
+  late Mock{{name}}Usecases mockUsecases;
+
+  setUp(() {
+    mockUsecases = Mock{{name}}Usecases();
+    sut = {{name}}Controller(mockUsecases);
+    registerFallbackValue(const {{name}}Entity());
+  });
+
+  void setupSearchSuccess(List<{{name}}Entity> entities) {
+    when(() => mockUsecases.search{{name}}(
+      criteria: any(named: 'criteria'),
+      start: any(named: 'start'),
+      end: any(named: 'end'),
+    )).thenAnswer((_) async => Right(entities));
+  }
+
+  group('search{{name}}', () {
+    const tEntities = [{{name}}Entity(id: '1'), {{name}}Entity(id: '2')];
+
+    test('should populate list and clear error on success', () async {
+      setupSearchSuccess(tEntities);
+      await sut.search{{name}}(null);
+      expect(sut.state.isLoading, false);
+      expect(sut.state.{{snakeName}}s, tEntities);
+      expect(sut.state.error, isNull);
+    });
+
+    test('should set error on failure', () async {
+      const tFailure = ServerFailure('Server error', '500');
+      when(() => mockUsecases.search{{name}}(
+        criteria: any(named: 'criteria'),
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      )).thenAnswer((_) async => const Left(tFailure));
+      await sut.search{{name}}(null);
+      expect(sut.state.isLoading, false);
+      expect(sut.state.error, const ServerFailure('Server error', '500'));
+    });
+  });
+
+  group('create{{name}}', () {
+    const tEntity = {{name}}Entity(id: 'new-1');
+
+    test('should prepend new entity to list', () async {
+      setupSearchSuccess(const [{{name}}Entity(id: 'old-1')]);
+      await sut.search{{name}}(null);
+      expect(sut.state.{{snakeName}}s?.length, 1);
+      when(() => mockUsecases.insert{{name}}(any()))
+          .thenAnswer((_) async => tEntity);
+      await sut.create{{name}}(tEntity);
+      expect(sut.state.{{snakeName}}s?.first.id, 'new-1');
+      expect(sut.state.{{snakeName}}s?.length, 2);
+      expect(sut.state.error, isNull);
+    });
+  });
+
+  group('update{{name}}', () {
+    test('should keep entity in list on success', () async {
+      setupSearchSuccess(const [{{name}}Entity(id: '1')]);
+      when(() => mockUsecases.update{{name}}(any()))
+          .thenAnswer((_) async => const {{name}}Entity(id: '1'));
+      await sut.search{{name}}(null);
+      await sut.update{{name}}(const {{name}}Entity(id: '1'));
+      expect(sut.state.{{snakeName}}s?.length, 1);
+      expect(sut.state.error, isNull);
+    });
+  });
+
+  group('delete{{name}}ById', () {
+    test('should remove entity from list', () async {
+      setupSearchSuccess(const [{{name}}Entity(id: '1'), {{name}}Entity(id: '2')]);
+      when(() => mockUsecases.delete{{name}}ById('1'))
+          .thenAnswer((_) async {});
+      await sut.search{{name}}(null);
+      expect(sut.state.{{snakeName}}s?.length, 2);
+      await sut.delete{{name}}ById('1');
+      expect(sut.state.{{snakeName}}s?.length, 1);
+      expect(sut.state.{{snakeName}}s?.first.id, '2');
+      expect(sut.state.error, isNull);
+    });
+  });
+}

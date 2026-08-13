@@ -6,6 +6,7 @@ import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/helpers/injection_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/implementation_helper.dart';
+import 'package:clean_solid_cli_mobile/utils/test_generator.dart';
 import 'package:clean_solid_cli_mobile/utils/interactive_prompt.dart';
 
 class CreateNewFeature extends Command {
@@ -114,7 +115,18 @@ class CreateNewFeature extends Command {
       }
     }
 
-    print("\nMise à jour de l'injection de dépendances...");
+        // Generation des tests unitaires
+    try {
+      final projectName = GetProjetItem.getProjectName();
+      await TestGenerator.generate(
+        featureName: featureName,
+        projectName: projectName,
+      );
+    } catch (e) {
+      print("Erreur lors de la generation des tests : \$e");
+    }
+
+print("\nMise à jour de l'injection de dépendances...");
     InjectionHelper.updateInjectionContainer(featureName, capitalizedName);
 
     print("Mise à jour du ErrorListener...");
