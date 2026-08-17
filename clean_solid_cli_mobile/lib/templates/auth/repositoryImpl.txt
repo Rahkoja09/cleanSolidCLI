@@ -33,7 +33,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = _remoteSource.getCurrentUser();
       return Right(user);
     } catch (e) {
-      return Left(UnexceptedFailure(e.toString(), "500"));
+      return Left(UnexpectedFailure(e.toString(), "500"));
     }
   }
 
@@ -95,7 +95,7 @@ class AuthRepositoryImpl implements AuthRepository {
       } on ApiException catch (e) {
         return Left(ApiFailure.fromException(e));
       } catch (e) {
-        return Left(UnexceptedFailure(e.toString(), "500"));
+        return Left(UnexpectedFailure(e.toString(), "500"));
       }
     }
     return const Left(NetworkFailure("Pas de connexion Internet", "NET_001"));

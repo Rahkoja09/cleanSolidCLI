@@ -41,8 +41,6 @@ class InitCommand extends Command {
         '   Usage : cscm init <nom_du_projet>'
         '   Exemple : cscm init mon_app',
       );
-
-      throw Exception('Veuillez spécifier un nom de projet.');
     }
 
     final backend = argResults?['backend'] as String? ?? 'supabase';
@@ -317,34 +315,34 @@ abstract class Failure extends Equatable {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure(super.message, super.code);
+  const ServerFailure({required super.message, super.code});
 }
 
 class ApiFailure extends Failure {
-  const ApiFailure(super.message, super.code);
+  const ApiFailure({required super.message, super.code});
 
   factory ApiFailure.fromException(dynamic exception) {
     return ApiFailure(
-      exception.message as String? ?? 'Erreur API inconnue',
-      exception.code as String?,
+      message: exception.message as String? ?? 'Erreur API inconnue',
+      code: exception.code as String?,
     );
   }
 }
 
 class AuthFailure extends Failure {
-  const AuthFailure(super.message, super.code);
+  const AuthFailure({required super.message, super.code});
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure(super.message, super.code);
+  const NetworkFailure({required super.message, super.code});
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure(super.message, super.code);
+  const CacheFailure({required super.message, super.code});
 }
 
 class UnexpectedFailure extends Failure {
-  const UnexpectedFailure(super.message, super.code);
+  const UnexpectedFailure({required super.message, super.code});
 }
 ''';
 
@@ -404,7 +402,7 @@ class NetworkInfoImpl implements NetworkInfo {
   Future<bool> get isConnected => _connectionChecker.hasInternetAccess;
 
   @override
-  Stream<bool> get onStatusChange => _connectionChecker.onStatusChange;
+  Stream<bool> get onStatusChange => _connectionChecker.onStatusChange.map((s) => s == InternetStatus.connected);
 }
 ''';
 
@@ -671,7 +669,7 @@ environment:
   sdk: ^3.7.0
 
 dependencies:
- ${deps.join('\n')}
+${deps.join('\n')}
 
 dev_dependencies:
   flutter_test:

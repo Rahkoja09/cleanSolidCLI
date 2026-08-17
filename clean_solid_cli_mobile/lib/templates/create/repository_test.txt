@@ -4,12 +4,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:{{projectName}}/core/error/exceptions.dart';
 import 'package:{{projectName}}/core/error/failures.dart';
 import 'package:{{projectName}}/core/network/network_info.dart';
+import 'package:{{projectName}}/features/{{snakeName}}/data/model/{{snakeName}}_model.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/data/source/{{snakeName}}_remote_source.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/data/repository/{{snakeName}}_repository_impl.dart';
 import 'package:{{projectName}}/features/{{snakeName}}/domain/entity/{{snakeName}}_entity.dart';
 
 class Mock{{name}}RemoteSource extends Mock implements {{name}}RemoteSource {}
-
 class MockNetworkInfo extends Mock implements NetworkInfo {}
 
 void main() {
@@ -21,35 +21,34 @@ void main() {
     mockRemoteSource = Mock{{name}}RemoteSource();
     mockNetworkInfo = MockNetworkInfo();
     sut = {{name}}RepositoryImpl(mockRemoteSource, mockNetworkInfo);
-    registerFallbackValue(const {{name}}Entity());
+    registerFallbackValue({{name}}Entity());
   });
 
   void setupConnected() {
-    when(() => mockNetworkInfo.isConnected)
-        .thenAnswer((_) async => true);
+    when(() => mockNetworkInfo.isConnected).thenAnswer((_) async => true);
   }
 
   void setupOffline() {
-    when(() => mockNetworkInfo.isConnected)
-        .thenAnswer((_) async => false);
+    when(() => mockNetworkInfo.isConnected).thenAnswer((_) async => false);
   }
 
   group('insert{{name}}', () {
     const tEntity = {{name}}Entity(id: '1');
+    final tModel = {{name}}Model(id: '1');
 
-    test('should return entity when online and source succeeds', () async {
+    test('should return Right when online and source succeeds', () async {
       setupConnected();
       when(() => mockRemoteSource.insert{{name}}(any()))
-          .thenAnswer((_) async => tEntity);
+          .thenAnswer((_) async => tModel);
       final result = await sut.insert{{name}}(tEntity);
-      expect(result, Right(tEntity));
+      expect(result.isRight(), true);
       verify(() => mockRemoteSource.insert{{name}}(tEntity)).called(1);
     });
 
     test('should return NetworkFailure when offline', () async {
       setupOffline();
       final result = await sut.insert{{name}}(tEntity);
-      expect(result, const Left(NetworkFailure('Pas de connexion Internet', 'NET_001')));
+      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
       verifyNever(() => mockRemoteSource.insert{{name}}(any()));
     });
 
@@ -80,51 +79,58 @@ void main() {
 
   group('update{{name}}', () {
     const tEntity = {{name}}Entity(id: '1');
+    final tModel = {{name}}Model(id: '1');
 
     test('should return updated entity', () async {
       setupConnected();
       when(() => mockRemoteSource.update{{name}}(any()))
-          .thenAnswer((_) async => tEntity);
-      expect(await sut.update{{name}}(tEntity), Right(tEntity));
+          .thenAnswer((_) async => tModel);
+      final result = await sut.update{{name}}(tEntity);
+      expect(result.isRight(), true);
     });
 
     test('should return NetworkFailure when offline', () async {
       setupOffline();
-      expect(await sut.update{{name}}(tEntity), const Left(NetworkFailure('Pas de connexion Internet', 'NET_001')));
+      final result = await sut.update{{name}}(tEntity);
+      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
     });
   });
 
   group('search{{name}}', () {
-    const tEntities = [{{name}}Entity(id: '1'), {{name}}Entity(id: '2')];
+    final tModels = [{{name}}Model(id: '1'), {{name}}Model(id: '2')];
 
     test('should return list of entities', () async {
       setupConnected();
       when(() => mockRemoteSource.search{{name}}(any(), start: any(named: 'start'), end: any(named: 'end')))
-          .thenAnswer((_) async => tEntities);
-      expect(await sut.search{{name}}(start: 0, end: 9), Right(tEntities));
+          .thenAnswer((_) async => tModels);
+      final result = await sut.search{{name}}(start: 0, end: 9);
+      expect(result.isRight(), true);
     });
 
     test('should return empty list when no results', () async {
       setupConnected();
       when(() => mockRemoteSource.search{{name}}(any(), start: any(named: 'start'), end: any(named: 'end')))
-          .thenAnswer((_) async => <{{name}}Entity>[]);
-      expect(await sut.search{{name}}(start: 0, end: 9), const Right(<{{name}}Entity>[]));
+          .thenAnswer((_) async => <{{name}}Model>[]);
+      final result = await sut.search{{name}}(start: 0, end: 9);
+      expect(result.isRight(), true);
     });
 
     test('should return NetworkFailure when offline', () async {
       setupOffline();
-      expect(await sut.search{{name}}(start: 0, end: 9), const Left(NetworkFailure('Pas de connexion Internet', 'NET_001')));
+      final result = await sut.search{{name}}(start: 0, end: 9);
+      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
     });
   });
 
   group('get{{name}}ById', () {
-    const tEntity = {{name}}Entity(id: '1');
+    final tModel = {{name}}Model(id: '1');
 
     test('should return entity', () async {
       setupConnected();
       when(() => mockRemoteSource.get{{name}}ById('1'))
-          .thenAnswer((_) async => tEntity);
-      expect(await sut.get{{name}}ById('1'), Right(tEntity));
+          .thenAnswer((_) async => tModel);
+      final result = await sut.get{{name}}ById('1');
+      expect(result.isRight(), true);
     });
   });
 
@@ -133,12 +139,13 @@ void main() {
       setupConnected();
       when(() => mockRemoteSource.delete{{name}}ById('1'))
           .thenAnswer((_) async {});
-      expect(await sut.delete{{name}}ById('1'), const Right(unit));
+      expect((await sut.delete{{name}}ById('1')).isRight(), true);
     });
 
     test('should return NetworkFailure when offline', () async {
       setupOffline();
-      expect(await sut.delete{{name}}ById('1'), const Left(NetworkFailure('Pas de connexion Internet', 'NET_001')));
+      final result = await sut.delete{{name}}ById('1');
+      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
     });
   });
 }

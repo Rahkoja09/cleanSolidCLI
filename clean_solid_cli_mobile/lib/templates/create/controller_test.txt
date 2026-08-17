@@ -15,7 +15,7 @@ void main() {
   setUp(() {
     mockUsecases = Mock{{name}}Usecases();
     sut = {{name}}Controller(mockUsecases);
-    registerFallbackValue(const {{name}}Entity());
+    registerFallbackValue({{name}}Entity());
   });
 
   void setupSearchSuccess(List<{{name}}Entity> entities) {
@@ -38,7 +38,7 @@ void main() {
     });
 
     test('should set error on failure', () async {
-      const tFailure = ServerFailure('Server error', '500');
+      const tFailure = ServerFailure(message: 'Server error', code: '500');
       when(() => mockUsecases.search{{name}}(
         criteria: any(named: 'criteria'),
         start: any(named: 'start'),
@@ -46,7 +46,7 @@ void main() {
       )).thenAnswer((_) async => const Left(tFailure));
       await sut.search{{name}}(null);
       expect(sut.state.isLoading, false);
-      expect(sut.state.error, const ServerFailure('Server error', '500'));
+      expect(sut.state.error, const ServerFailure(message: 'Server error', code: '500'));
     });
   });
 
@@ -58,7 +58,7 @@ void main() {
       await sut.search{{name}}(null);
       expect(sut.state.{{snakeName}}s?.length, 1);
       when(() => mockUsecases.insert{{name}}(any()))
-          .thenAnswer((_) async => tEntity);
+          .thenAnswer((_) async => Right(tEntity));
       await sut.create{{name}}(tEntity);
       expect(sut.state.{{snakeName}}s?.first.id, 'new-1');
       expect(sut.state.{{snakeName}}s?.length, 2);
@@ -70,7 +70,7 @@ void main() {
     test('should keep entity in list on success', () async {
       setupSearchSuccess(const [{{name}}Entity(id: '1')]);
       when(() => mockUsecases.update{{name}}(any()))
-          .thenAnswer((_) async => const {{name}}Entity(id: '1'));
+          .thenAnswer((_) async => const Right({{name}}Entity(id: '1')));
       await sut.search{{name}}(null);
       await sut.update{{name}}(const {{name}}Entity(id: '1'));
       expect(sut.state.{{snakeName}}s?.length, 1);
@@ -82,7 +82,7 @@ void main() {
     test('should remove entity from list', () async {
       setupSearchSuccess(const [{{name}}Entity(id: '1'), {{name}}Entity(id: '2')]);
       when(() => mockUsecases.delete{{name}}ById('1'))
-          .thenAnswer((_) async {});
+          .thenAnswer((_) async => const Right(unit));
       await sut.search{{name}}(null);
       expect(sut.state.{{snakeName}}s?.length, 2);
       await sut.delete{{name}}ById('1');
