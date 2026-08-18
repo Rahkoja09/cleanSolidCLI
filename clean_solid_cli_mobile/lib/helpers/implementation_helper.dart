@@ -5,6 +5,7 @@ import 'package:clean_solid_cli_mobile/models/field.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/utils/field_parser.dart';
 import 'package:clean_solid_cli_mobile/utils/sql_generator.dart';
+import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:path/path.dart' as p;
 
 class ImplementationHelper {
@@ -12,7 +13,7 @@ class ImplementationHelper {
     required String featureName,
     required String fieldsRaw,
     required String projectName,
-    bool isUpdate = false, // NOUVEAU : true si cscm implemente
+    bool isUpdate = false,
   }) {
     final fields = FieldParser.parse(fieldsRaw);
     if (fields.isEmpty) return;
@@ -35,20 +36,10 @@ class ImplementationHelper {
 
         switch (type) {
           case ImplementationType.entityImpl:
-            content = Injections.injectEntity(
-              content,
-              fields,
-              pascalName,
-              projectName,
-            );
+            content = Injections.injectEntity(content, fields, pascalName, projectName);
             break;
           case ImplementationType.modelImpl:
-            content = Injections.injectModel(
-              content,
-              fields,
-              pascalName,
-              projectName,
-            );
+            content = Injections.injectModel(content, fields, pascalName, projectName);
             break;
           case ImplementationType.remoteSourceImpl:
             content = Injections.injectRemoteSource(content, fields);
@@ -56,9 +47,9 @@ class ImplementationHelper {
         }
 
         file.writeAsStringSync(content);
-        print("Implémentation réussie pour : ${type.name}");
+        CliUI.fileUpdated(p.basename(filePath));
       } catch (e) {
-        print("Erreur lors de l'implémentation de ${type.name} : $e");
+        CliUI.error('Implémentation ${type.name} : $e');
       }
     }
 
@@ -70,8 +61,6 @@ class ImplementationHelper {
     );
   }
 
-  // ... _generateEnumFiles, _buildEnumContent, _getFilePathForType IDENTIQUES
-
   static void _generateEnumFiles(List<Field> fields, String snakeName) {
     final enumFields = fields.where((f) => f.isEnum).toList();
     if (enumFields.isEmpty) return;
@@ -82,18 +71,17 @@ class ImplementationHelper {
     }
 
     for (final field in enumFields) {
-      final filePath =
-          'lib/features/$snakeName/domain/enums/${field.name}_enum.dart';
+      final filePath = 'lib/features/$snakeName/domain/enums/${field.name}_enum.dart';
       final file = File(filePath);
 
       if (file.existsSync()) {
-        print("  Enum ${field.enumClassName} existe déjà. Saut.");
+        CliUI.fileSkipped('${field.name}_enum.dart');
         continue;
       }
 
       final content = _buildEnumContent(field);
       file.writeAsStringSync(content);
-      print("  Enum généré : ${field.name}_enum.dart");
+      CliUI.fileCreated('${field.name}_enum.dart');
     }
   }
 
@@ -102,7 +90,7 @@ class ImplementationHelper {
     final values = field.dartEnumValues.map((v) => '  $v,').join('\n');
 
     return '''enum $className {
-$values
+ $values
 
   String get value => name;
 
@@ -120,32 +108,11 @@ $values
   static String _getFilePathForType(ImplementationType type, String snake) {
     switch (type) {
       case ImplementationType.entityImpl:
-        return p.join(
-          'lib',
-          'features',
-          snake,
-          'domain',
-          'entity',
-          '${snake}_entity.dart',
-        );
+        return p.join('lib', 'features', snake, 'domain', 'entity', '${snake}_entity.dart');
       case ImplementationType.modelImpl:
-        return p.join(
-          'lib',
-          'features',
-          snake,
-          'data',
-          'model',
-          '${snake}_model.dart',
-        );
+        return p.join('lib', 'features', snake, 'data', 'model', '${snake}_model.dart');
       case ImplementationType.remoteSourceImpl:
-        return p.join(
-          'lib',
-          'features',
-          snake,
-          'data',
-          'source',
-          '${snake}_remote_source.dart',
-        );
+        return p.join('lib', 'features', snake, 'data', 'source', '${snake}_remote_source.dart');
     }
   }
 }

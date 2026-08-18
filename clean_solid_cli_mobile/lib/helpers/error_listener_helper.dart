@@ -1,6 +1,7 @@
 import 'dart:io';
+import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
+import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:path/path.dart' as p;
-import '../utils/get_projet_item.dart';
 
 class ErrorListenerHelper {
   static void updateErrorListener(String capitalizedName, String snakeName) {
@@ -13,9 +14,7 @@ class ErrorListenerHelper {
     final file = File(filePath);
 
     if (!file.existsSync()) {
-      print(
-        " Le fichier success_error_listener.dart n'existe pas encore. FileHelper doit le créer d'abord.",
-      );
+      CliUI.error('success_error_listener.dart inexistant');
       return;
     }
 
@@ -38,7 +37,7 @@ class ErrorListenerHelper {
     }
 
     if (content.contains('${snakeName}ControllerProvider')) {
-      print("Le listener pour $capitalizedName est déjà présent.");
+      CliUI.info('$capitalizedName listener deja present');
       return;
     }
 
@@ -62,7 +61,7 @@ class ErrorListenerHelper {
             context,
             description: next.action!.successMessage,
             isError: false,
-            title: "Succès $capitalizedName",
+            title: "Succes $capitalizedName",
           );
         }
       }
@@ -74,9 +73,9 @@ class ErrorListenerHelper {
         '$listenerBlock\n    // [LISTENERS_ANCHOR]',
       );
       file.writeAsStringSync(content);
-      print("success_error_listener.dart mis à jour pour $capitalizedName.");
+      CliUI.success('ErrorListener mis a jour pour $capitalizedName');
     } else {
-      print("Erreur : // [LISTENERS_ANCHOR] introuvable dans le fichier.");
+      CliUI.error('ancre // [LISTENERS_ANCHOR] introuvable');
     }
   }
 

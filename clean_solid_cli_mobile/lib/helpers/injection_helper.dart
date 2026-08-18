@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 
 class InjectionHelper {
@@ -17,13 +17,13 @@ class InjectionHelper {
     String content = file.readAsStringSync();
 
     if (content.contains('_init$capitalizedName()')) {
-      print(" Injection déjà présente pour $capitalizedName");
+      CliUI.info('$capitalizedName deja present');
       return;
     }
+
     final projectName = GetProjetItem.getProjectName();
     final snakeName = featureName;
 
-    // Imports — le bloc contient l'ancre à la fin (comportement original)
     final imports = """
 import 'package:$projectName/features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
 import 'package:$projectName/features/$snakeName/data/source/${snakeName}_remote_source.dart';
@@ -31,10 +31,8 @@ import 'package:$projectName/features/$snakeName/domain/repository/${snakeName}_
 import 'package:$projectName/features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
 // [IMPORT_ANCHOR]""";
 
-    // Appel dans init() — le bloc contient l'ancre à la fin
     final initCall = "  _init$capitalizedName();\n  // [INIT_ANCHOR]";
 
-    // Méthode _init — injectée via INIT_METHOD_ANCHOR
     final initMethod = """
 Future<void> _init$capitalizedName() async {
   sl.registerLazySingleton<${capitalizedName}RemoteSource>(
@@ -48,13 +46,27 @@ Future<void> _init$capitalizedName() async {
 
 // [INIT_METHOD_ANCHOR]""";
 
-    // Injections avec warning si ancre manquante
-    content = _safeReplace(content, '// [IMPORT_ANCHOR]', imports, 'injection_container');
-    content = _safeReplace(content, '  // [INIT_ANCHOR]', initCall, 'injection_container');
-    content = _safeReplace(content, '// [INIT_METHOD_ANCHOR]', initMethod, 'injection_container');
+    content = _safeReplace(
+      content,
+      '// [IMPORT_ANCHOR]',
+      imports,
+      'injection_container',
+    );
+    content = _safeReplace(
+      content,
+      '  // [INIT_ANCHOR]',
+      initCall,
+      'injection_container',
+    );
+    content = _safeReplace(
+      content,
+      '// [INIT_METHOD_ANCHOR]',
+      initMethod,
+      'injection_container',
+    );
 
     file.writeAsStringSync(content);
-    print(" Injection Container mis à jour avec succès !");
+    CliUI.success('Injection Container mis a jour');
   }
 
   static void _createNewContainer(File file) {
@@ -108,12 +120,22 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
 
     if (authImports.isNotEmpty) {
       authImports += "\n// [IMPORT_ANCHOR]";
-      content = _safeReplace(content, '// [IMPORT_ANCHOR]', authImports, 'injection_container (auth)');
+      content = _safeReplace(
+        content,
+        '// [IMPORT_ANCHOR]',
+        authImports,
+        'injection_container (auth)',
+      );
     }
 
     if (!content.contains('_initAuth()')) {
       final initCall = "  _initAuth();\n  // [INIT_ANCHOR]";
-      content = _safeReplace(content, '  // [INIT_ANCHOR]', initCall, 'injection_container (auth)');
+      content = _safeReplace(
+        content,
+        '  // [INIT_ANCHOR]',
+        initCall,
+        'injection_container (auth)',
+      );
     }
 
     final newAuthMethod = _generateAuthInitMethod(
@@ -129,15 +151,18 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
       content = content.replaceFirst(regExp, newAuthMethod);
     } else {
       final authBlock = "$newAuthMethod\n// [INIT_METHOD_ANCHOR]";
-      content = _safeReplace(content, '// [INIT_METHOD_ANCHOR]', authBlock, 'injection_container (auth)');
+      content = _safeReplace(
+        content,
+        '// [INIT_METHOD_ANCHOR]',
+        authBlock,
+        'injection_container (auth)',
+      );
     }
 
     file.writeAsStringSync(content);
-    print(" Injection Container : Configuration Auth mise à jour !");
+    CliUI.success('Injection Container : Auth configure');
   }
 
-  /// Remplace une ancre avec warning si absente. L'ancre de remplacement
-  /// doit être incluse dans [replacement] par l'appelant.
   static String _safeReplace(
     String content,
     String anchor,
@@ -145,7 +170,7 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
     String context,
   ) {
     if (!content.contains(anchor)) {
-      print('  ⚠  Ancre "$anchor" introuvable dans $context. Injection ignorée.');
+      CliUI.warning('ancre "$anchor" introuvable dans $context');
       return content;
     }
     return content.replaceFirst(anchor, replacement);

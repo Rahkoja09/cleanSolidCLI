@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:clean_solid_cli_mobile/models/field.dart';
+import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 
 class SqlGenerator {
   static int _migrationCounter = 0;
+
   /// Génère la migration SQL.
   /// [isUpdate] = true si appelé depuis cscm implemente (ALTER TABLE)
   /// [isUpdate] = false si appelé depuis cscm create (CREATE TABLE)
@@ -37,12 +39,13 @@ class SqlGenerator {
     final file = File(finalPath);
     if (file.existsSync()) {
       _migrationCounter++;
-      finalFileName = '${timestamp}_${_migrationCounter}${isUpdate ? "_alter" : "_create"}_${tableName}.sql';
+      finalFileName =
+          '${timestamp}_${_migrationCounter}${isUpdate ? "_alter" : "_create"}_${tableName}.sql';
       finalPath = '$migrationsDir/$finalFileName';
     }
 
     file.writeAsStringSync(content);
-    print('  Migration SQL générée : $finalFileName');
+    CliUI.fileCreated('$finalFileName');
   }
 
   // ═══════════════════════════════════════════════════
@@ -63,9 +66,7 @@ class SqlGenerator {
     if (enumFields.isNotEmpty) {
       buffer.writeln('-- Enums');
       for (final f in enumFields) {
-        final values = f.dartEnumValues
-            .map((v) => "'${v}'")
-            .join(', ');
+        final values = f.dartEnumValues.map((v) => "'${v}'").join(', ');
         buffer.writeln(
           "DO \$\$ BEGIN\n"
           "  CREATE TYPE ${f.snakeName} AS ENUM ($values);\n"
@@ -128,9 +129,7 @@ class SqlGenerator {
     if (enumFields.isNotEmpty) {
       buffer.writeln('-- New enum types');
       for (final f in enumFields) {
-        final values = f.dartEnumValues
-            .map((v) => "'${v}'")
-            .join(', ');
+        final values = f.dartEnumValues.map((v) => "'${v}'").join(', ');
         buffer.writeln(
           "DO \$\$ BEGIN\n"
           "  CREATE TYPE ${f.snakeName} AS ENUM ($values);\n"

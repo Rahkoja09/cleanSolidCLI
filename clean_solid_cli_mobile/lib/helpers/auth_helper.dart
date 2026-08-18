@@ -1,15 +1,16 @@
 import 'dart:io';
-import 'dart:isolate';
+import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
-import 'package:path/path.dart' as p;
+import 'package:clean_solid_cli_mobile/utils/template_resolver.dart';
 import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
+import 'package:path/path.dart' as p;
 
 class AuthHelper {
   static Future<void> generateAuthFeature({
     required bool useEmail,
     required bool useSocial,
   }) async {
-    print("Analyse de la feature Authentication...");
+    CliUI.header('Configuration de l\'authentification');
 
     for (var type in AuthFileType.values) {
       if (type == AuthFileType.socialService && !useSocial) continue;
@@ -23,7 +24,6 @@ class AuthHelper {
         useSocial: useSocial,
       );
     }
-    print("Operation terminee avec succes.");
   }
 
   static Future<void> _processFile({
@@ -35,14 +35,16 @@ class AuthHelper {
     final file = File(targetPath);
     final projectName = GetProjetItem.getProjectName();
 
-    String templateContent = await _getTemplateContent(type);
-    if (templateContent.isEmpty) {
-      print("Erreur : Template introuvable pour ${type.name}");
+    String? templateContent = await TemplateResolver.readTemplate(
+      'templates/auth/${type.name}.txt',
+    );
+    if (templateContent == null || templateContent.isEmpty) {
+      CliUI.warning('template ${type.name} introuvable');
       return;
     }
 
     templateContent = templateContent.replaceAll(
-      "{{projectName}}",
+      '{{projectName}}',
       projectName,
     );
 
@@ -50,19 +52,19 @@ class AuthHelper {
       // MODE CREATION
       String finalContent = _processConditionalBlocks(
         templateContent,
-        "useEmail",
+        'useEmail',
         useEmail,
       );
       finalContent = _processConditionalBlocks(
         finalContent,
-        "useSocial",
+        'useSocial',
         useSocial,
       );
 
       if (finalContent.trim().isEmpty) return;
 
       file.writeAsStringSync(finalContent);
-      print("Genere : ${p.basename(targetPath)}");
+      CliUI.fileCreated(p.basename(targetPath));
     } else {
       // MODE UPDATE
       String existingContent = file.readAsStringSync();
@@ -72,20 +74,20 @@ class AuthHelper {
         updatedContent = _injectModule(
           updatedContent,
           templateContent,
-          "useEmail",
+          'useEmail',
         );
       }
       if (useSocial) {
         updatedContent = _injectModule(
           updatedContent,
           templateContent,
-          "useSocial",
+          'useSocial',
         );
       }
 
       if (updatedContent != existingContent) {
         file.writeAsStringSync(updatedContent);
-        print("Mis a jour : ${p.basename(targetPath)}");
+        CliUI.fileUpdated(p.basename(targetPath));
       }
     }
   }
@@ -95,8 +97,8 @@ class AuthHelper {
     String variable,
     bool enabled,
   ) {
-    final startTag = "{{#if $variable}}";
-    final endTag = "{{/if}}";
+    final startTag = '{{#if $variable}}';
+    final endTag = '{{/if}}';
 
     while (content.contains(startTag)) {
       int startIndex = content.indexOf(startTag);
@@ -118,7 +120,7 @@ class AuthHelper {
         content = content.replaceRange(
           startIndex,
           endIndex + endTag.length,
-          "",
+          '',
         );
       }
     }
@@ -130,8 +132,8 @@ class AuthHelper {
     String templateContent,
     String variable,
   ) {
-    final startTag = "{{#if $variable}}";
-    final endTag = "{{/if}}";
+    final startTag = '{{#if $variable}}';
+    final endTag = '{{/if}}';
 
     if (!templateContent.contains(startTag)) return existingContent;
 
@@ -143,87 +145,61 @@ class AuthHelper {
       return existingContent;
     }
 
-    final anchorName = variable == "useEmail" ? "email" : "social";
-    final pattern = RegExp(r'\/\/ {{.*' + anchorName + r'.*anchor}}');
+    final anchorName = variable == 'useEmail' ? 'email' : 'social';
+    final pattern = RegExp(r'// {{.*' + anchorName + r'.*anchor}}');
 
     if (existingContent.contains(pattern)) {
       return existingContent.replaceFirst(
         pattern,
-        "// {{$anchorName}_anchor}\n$blockToInject\n// {{$anchorName}_anchor}",
+        '// {{$anchorName}_anchor}\n$blockToInject\n// {{$anchorName}_anchor}',
       );
     }
 
     return existingContent;
   }
 
-  static Future<String> _getTemplateContent(AuthFileType type) async {
-    // Utilisation directe du nom de l'enum pour correspondre au fichier .txt
-    final templateName = type.name;
-    final packageUri = Uri.parse(
-      'package:clean_solid_cli_mobile/templates/auth/$templateName.txt',
-    );
-
-    final resolvedUri = await Isolate.resolvePackageUri(packageUri);
-    if (resolvedUri == null) return "";
-
-    final templateFile = File(resolvedUri.toFilePath());
-    return templateFile.existsSync() ? templateFile.readAsStringSync() : "";
-  }
-
   static String _getAuthTargetPath(AuthFileType type) {
-    final root = p.join("lib", "features", "auth");
+    final root = p.join('lib', 'features', 'auth');
     String dir;
     String file;
 
     switch (type) {
       case AuthFileType.entity:
-        dir = p.join(root, "domain", "entity");
-        file = "auth_entity.dart";
-        break;
+        dir = p.join(root, 'domain', 'entity');
+        file = 'auth_entity.dart';
       case AuthFileType.model:
-        dir = p.join(root, "data", "model");
-        file = "auth_model.dart";
-        break;
+        dir = p.join(root, 'data', 'model');
+        file = 'auth_model.dart';
       case AuthFileType.remoteSource:
-        dir = p.join(root, "data", "source");
-        file = "auth_remote_source.dart";
-        break;
+        dir = p.join(root, 'data', 'source');
+        file = 'auth_remote_source.dart';
       case AuthFileType.remoteSourceImpl:
-        dir = p.join(root, "data", "source");
-        file = "auth_remote_source_impl.dart";
-        break;
+        dir = p.join(root, 'data', 'source');
+        file = 'auth_remote_source_impl.dart';
       case AuthFileType.socialService:
-        dir = p.join(root, "data", "source");
-        file = "social_auth_service.dart";
-        break;
+        dir = p.join(root, 'data', 'source');
+        file = 'social_auth_service.dart';
       case AuthFileType.emailService:
-        dir = p.join(root, "data", "source");
-        file = "email_auth_service.dart";
-        break;
+        dir = p.join(root, 'data', 'source');
+        file = 'email_auth_service.dart';
       case AuthFileType.repository:
-        dir = p.join(root, "domain", "repository");
-        file = "auth_repository.dart";
-        break;
+        dir = p.join(root, 'domain', 'repository');
+        file = 'auth_repository.dart';
       case AuthFileType.repositoryImpl:
-        dir = p.join(root, "data", "repository");
-        file = "auth_repository_impl.dart";
-        break;
+        dir = p.join(root, 'data', 'repository');
+        file = 'auth_repository_impl.dart';
       case AuthFileType.usecases:
-        dir = p.join(root, "domain", "usecases");
-        file = "auth_usecases.dart";
-        break;
+        dir = p.join(root, 'domain', 'usecases');
+        file = 'auth_usecases.dart';
       case AuthFileType.states:
-        dir = p.join(root, "presentation", "states");
-        file = "auth_states.dart";
-        break;
+        dir = p.join(root, 'presentation', 'states');
+        file = 'auth_states.dart';
       case AuthFileType.action:
-        dir = p.join(root, "domain", "actions");
-        file = "auth_actions.dart";
-        break;
+        dir = p.join(root, 'domain', 'actions');
+        file = 'auth_actions.dart';
       case AuthFileType.controller:
-        dir = p.join(root, "presentation", "controller");
-        file = "auth_controller.dart";
-        break;
+        dir = p.join(root, 'presentation', 'controller');
+        file = 'auth_controller.dart';
     }
 
     final directory = Directory(dir);

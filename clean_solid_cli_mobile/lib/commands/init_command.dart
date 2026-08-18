@@ -30,7 +30,7 @@ class InitCommand extends Command {
   }
 
   @override
-  void run() {
+  Future<void> run() async {
     final projectName =
         (argResults!['name'] as String?) ??
         (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
@@ -65,6 +65,12 @@ class InitCommand extends Command {
 
     print('\n itialisation du projet [$snakeName]...\n');
 
+    // AVANT ConfigReader.createConfig(), ajouter :
+    final parentYaml = File('.cscm.yaml');
+    if (await parentYaml.exists()) {
+      await parentYaml.delete();
+    }
+
     // 1. Créer le .cscm.yaml
     ConfigReader.createConfig(projectName: snakeName, backend: backend);
 
@@ -86,7 +92,7 @@ class InitCommand extends Command {
     print('   5. cscm create ma_feature -i "nom:string,prix:double"');
   }
 
-  void _createProjectStructure(String name, String backend) {
+  Future<void> _createProjectStructure(String name, String backend) async {
     final projectDir = Directory(name);
     if (!projectDir.existsSync()) {
       projectDir.createSync(recursive: true);
@@ -110,10 +116,10 @@ class InitCommand extends Command {
       '$libDir/shared/widgets/buttons',
       '$libDir/shared/widgets/inputs',
       '$libDir/features',
-      '$libDir/assets/medias/icons',
-      '$libDir/assets/medias/animations',
-      '$libDir/assets/theme',
-      '$libDir/assets/fonts',
+      '${projectDir.path}/assets/medias/icons',
+      '${projectDir.path}/assets/medias/animations',
+      '${projectDir.path}/assets/theme',
+      '${projectDir.path}/assets/fonts',
     ];
 
     for (final dir in directories) {
@@ -143,7 +149,7 @@ class InitCommand extends Command {
     _writeFile('$libDir/core/error/error_manager.dart', _errorManager());
     _writeFile('$libDir/core/network/network_info.dart', _networkInfo());
     _writeFile('$libDir/core/router/app_router.dart', _appRouter(name));
-    _writeFile('$libDir/core/utils/typedefs.dart', _typedefs());
+    _writeFile('$libDir/core/utils/typedefs.dart', _typedefs(name));
 
     // --- ERROR LISTENER ---
     _writeFile(
@@ -178,11 +184,17 @@ class InitCommand extends Command {
       configFile.copySync('${projectDir.path}/.cscm.yaml');
     }
 
+    // Après la copie dans le projet, nettoyer le parent
+    final parentYaml = File('.cscm.yaml');
+    if (await parentYaml.exists()) {
+      await parentYaml.delete();
+    }
+
     // Créer un .gitkeep dans les dossiers vides
     final gitkeeps = [
-      '$libDir/assets/medias/icons',
-      '$libDir/assets/medias/animations',
-      '$libDir/assets/fonts',
+      '${projectDir.path}/assets/medias/icons',
+      '${projectDir.path}/assets/medias/animations',
+      '${projectDir.path}/assets/fonts',
       '$libDir/features',
     ];
     for (final gk in gitkeeps) {
@@ -428,7 +440,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 });
 ''';
 
-  String _typedefs() => '''
+  String _typedefs(String name) => '''
 import 'package:dartz/dartz.dart';
 import 'package:$name/core/error/failures.dart';
 
