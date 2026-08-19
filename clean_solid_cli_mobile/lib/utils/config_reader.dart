@@ -48,7 +48,6 @@ class ConfigReader {
   }) {
     final file = File(configFileName);
     if (file.existsSync()) {
-      print('$configFileName existe déjà.');
       return;
     }
 
@@ -65,8 +64,6 @@ use_go_router: true
 ''';
 
     file.writeAsStringSync(content);
-    print('$configFileName créé avec succès.');
-    print('   Nom du projet : $snakeName');
   }
 
   static void updateConfig(Map<String, dynamic> updates) {
@@ -88,6 +85,5 @@ use_go_router: true
     });
 
     File(configFileName).writeAsStringSync(buffer.toString());
-    print('Configuration mise à jour.');
   }
 }

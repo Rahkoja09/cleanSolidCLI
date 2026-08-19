@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-/// Affichage console professionnel — couleurs sémantiques, pas d'emojis.
+/// CLI output — clig.dev compliant.
+/// No emojis. Color is intentional. Brief messages.
+/// Auto-disables color when stdout is not a TTY or NO_COLOR is set.
 class CliUI {
+  // ── Colors ──────────────────────────────────────
   static const _reset = '\x1b[0m';
   static const _bold = '\x1b[1m';
   static const _dim = '\x1b[2m';
@@ -12,7 +15,19 @@ class CliUI {
   static const _cyan = '\x1b[36m';
   static const _gray = '\x1b[90m';
 
-  static String _c(String color, String text) => '$color$text$_reset';
+  static final bool _color = _detectColor();
+
+  static bool _detectColor() {
+    if (Platform.environment.containsKey('NO_COLOR')) return false;
+    try {
+      return stdout.supportsAnsiEscapes;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static String _c(String color, String text) =>
+      _color ? '$color$text$_reset' : text;
   static String bold(String t) => _c(_bold, t);
   static String dim(String t) => _c(_dim, t);
   static String green(String t) => _c(_green, t);
@@ -21,113 +36,127 @@ class CliUI {
   static String cyan(String t) => _c(_cyan, t);
   static String gray(String t) => _c(_gray, t);
 
-  static const int _w = 50;
-
-  // ─── Header ────────────────────────────────
-  static void header(String title, {String? subtitle}) {
-    final line = '─' * (_w - 4);
+  // ── Header ─────────────────────────────────────
+  static void header(String title) {
+    final line = gray('${"─" * 3} $title ${"─" * 3}');
     print('');
-    print(gray('  ┌$line┐'));
-    print(
-      gray('  │') +
-          bold('  CSCM · $title') +
-          ' ' * (_w - 11 - title.length) +
-          gray('│'),
-    );
-    if (subtitle != null) {
-      print(
-        gray('  │') +
-            '  $subtitle' +
-            ' ' * (_w - 4 - subtitle.length) +
-            gray('│'),
-      );
-    }
-    print(gray('  └$line┘'));
+    print(line);
     print('');
   }
 
-  // ─── Section ───────────────────────────────
+  // ── Section ────────────────────────────────────
   static void section(String title, {String? count}) {
     final suffix = count != null ? dim(' ($count)') : '';
-    print('');
     print('  ${bold(title)}$suffix');
-    print(gray('  ' + '─' * 44));
+    print('  ${gray('─' * title.length)}');
   }
 
-  // ─── Status ────────────────────────────────
-  static void success(String msg) => print('  ${green("✓")}  $msg');
-  static void error(String msg) => print('  ${red("✗")}  $msg');
-  static void warning(String msg) => print('  ${yellow("!")}  $msg');
-  static void info(String msg) => print('  ${cyan("i")}  $msg');
+  // ── Status ────────────────────────────────────
+  static void success(String msg) => _status('ok', msg, _green);
+  static void error(String msg) => _status('err', msg, _red);
+  static void warning(String msg) => _status('warn', msg, _yellow);
+  static void info(String msg) => _status('info', msg, _cyan);
 
-  // ─── File ──────────────────────────────────
-  static void fileCreated(String name) => print('  ${green("✓")}  $name');
+  static void _status(String label, String msg, String color) {
+    final tag = _c(color, label.padRight(5));
+    print('  $tag  $msg');
+  }
+
+  // ── File ──────────────────────────────────────
+  static void fileCreated(String name) => _fileLine('create', name, _green);
   static void fileSkipped(String name, {String reason = 'exists'}) =>
-      print('  ${gray("-")}  $name  ${dim("($reason)")}');
-  static void fileUpdated(String name) => print('  ${cyan("↻")}  $name');
+      _fileLine('skip', name, _gray, note: reason);
+  static void fileUpdated(String name) => _fileLine('update', name, _cyan);
 
-  // ─── Summary Box ───────────────────────────
-  static void summary(String content) {
-    final line = '─' * (_w - 4);
-    print('');
-    print(gray('  ┌$line┐'));
-    for (final l in content.split('\n')) {
-      final inner = '  $l';
-      final pad = _w - 4 - l.length - 2;
-      print(gray('  │') + inner + (pad > 0 ? ' ' * pad : '') + gray('│'));
-    }
-    print(gray('  └$line┘'));
+  static void _fileLine(
+    String action,
+    String name,
+    String color, {
+    String? note,
+  }) {
+    final tag = _c(color, action.padRight(7));
+    final noteStr = note != null ? '  ${dim('($note)')}' : '';
+    print('    $tag  $name$noteStr');
   }
 
-  // ─── Next Steps ────────────────────────────
+  // ── Next Steps ────────────────────────────────
   static void nextSteps(List<String> steps) {
     print('');
-    print('  ${bold("Prochaines étapes")}');
+    print('  ${bold('Next:')}');
     for (var i = 0; i < steps.length; i++) {
-      print('    ${cyan("${i + 1}.")}  ${steps[i]}');
+      print('    ${dim('${i + 1}.')}  ${steps[i]}');
     }
     print('');
   }
 
-  // ─── Hint ──────────────────────────────────
+  // ── Hint ──────────────────────────────────────
   static void hint(String msg) {
+    print('  ${dim('>')}  $msg');
+  }
+
+  // ── Summary Box (kept for compat) ─────────────
+  static void summary(String content) {
+    final lines = content.split('\n');
+    final maxLen = lines.map((l) => l.length).fold(0, (a, b) => a > b ? a : b);
+    final pad = maxLen + 4;
     print('');
-    print('  ${cyan("→")}  $msg');
+    print(gray('  ┌${"─" * pad}┐'));
+    for (final l in lines) {
+      final inner = '  $l';
+      final trailing = pad - l.length - 2;
+      print(
+        gray('  │') + inner + (trailing > 0 ? ' ' * trailing : '') + gray('│'),
+      );
+    }
+    print(gray('  └${"─" * pad}┘'));
   }
 
-  // ─── Loading (sans retour à la ligne, à clear manuellement) ───
-  static void loading(String msg) {
-    stdout.write('  ${cyan("⠋")}  $msg');
-  }
-
-  static void clearLine() {
-    stdout.write('\r${' ' * 80}\r');
-  }
-
-  // ─── Spinner ───────────────────────────────
+  // ── Spinner ───────────────────────────────────
   static Future<T> withSpinner<T>(
     String message,
     Future<T> Function() task,
   ) async {
-    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    const frames = ['/', '-', '\\', '|'];
     var frame = 0;
     var running = true;
-    final timer = Timer.periodic(const Duration(milliseconds: 80), (_) {
+    var currentLen = 0;
+
+    final timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (!running) return;
-      stdout.write('\r  ${gray(frames[frame])}  $message');
+      final text = '  ${cyan(frames[frame])}  $message';
+      // Clear previous line
+      if (currentLen > 0) {
+        stdout.write('\r${" " * currentLen}\r');
+      }
+      stdout.write(text);
+      currentLen = text.length;
       frame = (frame + 1) % frames.length;
     });
     try {
       final result = await task();
       running = false;
       timer.cancel();
-      stdout.write('\r  ${green("✓")}  $message\n');
+      // Clear spinner line
+      if (currentLen > 0) {
+        stdout.write('\r${" " * currentLen}\r');
+      }
+      final tag = _c(_green, 'ok'.padRight(5));
+      print('  $tag  $message');
       return result;
     } catch (e) {
       running = false;
       timer.cancel();
-      stdout.write('\r  ${red("✗")}  $message\n');
+      if (currentLen > 0) {
+        stdout.write('\r${" " * currentLen}\r');
+      }
+      final tag = _c(_red, 'err'.padRight(5));
+      print('  $tag  $message');
       rethrow;
     }
+  }
+
+  /// Clear the current line (useful before printing final output).
+  static void clearLine() {
+    stdout.write('\r${" " * 80}\r');
   }
 }

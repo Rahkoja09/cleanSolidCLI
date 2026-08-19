@@ -9,6 +9,7 @@ import 'package:clean_solid_cli_mobile/commands/init_command.dart';
 import 'package:clean_solid_cli_mobile/commands/generate_all_command.dart';
 import 'package:clean_solid_cli_mobile/commands/add_widget_command.dart';
 import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
+import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 
 void main(List<String> arguments) async {
   final runner = CommandRunner(
@@ -33,13 +34,13 @@ void main(List<String> arguments) async {
   try {
     await runner.run(arguments);
   } on UsageException catch (e) {
-    print(e);
+    print(e.message);
     exitCode = 64;
   } on CliException catch (e) {
-    print("  Erreur : ${e.message}");
+    CliUI.error(e.message);
     exitCode = e.exitCode;
   } catch (e) {
-    print("  Erreur : $e");
+    CliUI.error(e.toString());
     exitCode = 1;
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
+import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 
 class InjectionHelper {
   static void updateInjectionContainer(
@@ -22,7 +23,7 @@ class InjectionHelper {
     }
 
     final projectName = GetProjetItem.getProjectName();
-    final snakeName = featureName;
+    final snakeName = ReformateClassName.formatToSnakeCase(featureName);
 
     final imports = """
 import 'package:$projectName/features/$snakeName/data/repository/${snakeName}_repository_impl.dart';

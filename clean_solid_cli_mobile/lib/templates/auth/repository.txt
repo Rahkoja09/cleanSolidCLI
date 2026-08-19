@@ -9,7 +9,7 @@
 {{#if useEmail}}
 import 'package:supabase_flutter/supabase_flutter.dart';
 {{/if}}
-import 'package:{{projectName}}/core/utils/typedef/typedefs.dart';
+import 'package:{{projectName}}/core/utils/typedefs.dart';
 import 'package:{{projectName}}/features/auth/domain/entity/auth_entity.dart';
 // {{auth_repo_imports_anchor}}
 

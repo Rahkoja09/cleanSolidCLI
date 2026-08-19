@@ -29,8 +29,8 @@ class TestCommand extends Command {
         argResults?.rest.isNotEmpty == true ? argResults!.rest.first : null;
 
     if (shouldGenerate && featureArg == null) {
-      CliUI.error("--generate necessite un nom de feature.");
-      CliUI.hint("Usage : cscm test <feature> --generate");
+      CliUI.error('--generate necessite un nom de feature.');
+      CliUI.hint('Usage: cscm test <feature> --generate');
       return;
     }
 
@@ -38,7 +38,7 @@ class TestCommand extends Command {
       if (featureArg.contains('..') ||
           featureArg.contains('/') ||
           featureArg.contains('\\')) {
-        CliUI.error("Nom de feature invalide.");
+        CliUI.error('Nom de feature invalide.');
         return;
       }
 
@@ -49,47 +49,41 @@ class TestCommand extends Command {
       }
 
       final testDir = 'test/features/$snakeName';
-      final dir = Directory(testDir);
-      if (!dir.existsSync()) {
-        CliUI.warning("Aucun test trouve pour la feature : $featureArg");
+      if (!Directory(testDir).existsSync()) {
+        CliUI.warning("Aucun test pour la feature: $featureArg");
         return;
       }
 
       await _runTests(label: featureArg, args: ['test', testDir]);
     } else {
-      final dir = Directory('test');
-      if (!dir.existsSync()) {
-        CliUI.warning("Aucun repertoire test/ trouve.");
+      if (!Directory('test').existsSync()) {
+        CliUI.warning('Aucun repertoire test/ trouve.');
         return;
       }
-
-      await _runTests(label: 'toutes les features', args: ['test']);
+      await _runTests(label: 'all', args: ['test']);
     }
   }
 
-  /// Lance flutter test avec un spinner, puis affiche SEULEMENT le resultat final.
-  /// Toute la sortie stdout est bufferisée — rien n'est affiché pendant la compilation.
+  /// Lance flutter test — bufferise TOUTE la sortie.
+  /// N'affiche que le resultat final et les erreurs dedupliquées.
   Future<void> _runTests({
     required String label,
     required List<String> args,
   }) async {
-    CliUI.header('Tests : $label');
+    CliUI.header('test $label');
 
-    // ── Spinner pendant la compilation ──
-    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    // ── Spinner ──
+    const frames = ['/', '-', '\\', '|'];
     var frame = 0;
     var showSpinner = true;
 
-    final spinner = Timer.periodic(const Duration(milliseconds: 80), (_) {
+    final spinner = Timer.periodic(const Duration(milliseconds: 100), (_) {
       if (!showSpinner) return;
-      // Écrit le spinner sur la même ligne, puis l'efface
-      stdout.write(
-        '\r  ${CliUI.gray(frames[frame])}  Compilation & execution des tests...',
-      );
+      stdout.write('\r  ${CliUI.cyan(frames[frame])}  Running tests...');
       frame = (frame + 1) % frames.length;
     });
 
-    // ── Lancer le process, tout bufferiser ──
+    // ── Lancer le process — tout bufferiser ──
     final process = await Process.start(
       'flutter',
       args,
@@ -97,43 +91,33 @@ class TestCommand extends Command {
       mode: ProcessStartMode.normal,
     );
 
-    final stdoutBuffer = StringBuffer();
-    final stderrBuffer = StringBuffer();
+    final stdoutBuf = StringBuffer();
+    final stderrBuf = StringBuffer();
 
-    // Écouter stdout — tout accumuler, NE RIEN afficher
-    final stdoutDone = process.stdout
+    final subOut = process.stdout
         .transform(const SystemEncoding().decoder)
-        .listen((chunk) {
-          stdoutBuffer.write(chunk);
-        });
+        .listen((chunk) => stdoutBuf.write(chunk));
 
-    final stderrDone = process.stderr
+    final subErr = process.stderr
         .transform(const SystemEncoding().decoder)
-        .listen((chunk) {
-          stderrBuffer.write(chunk);
-        });
+        .listen((chunk) => stderrBuf.write(chunk));
 
     final exitCode = await process.exitCode;
-    await stdoutDone.cancel();
-    await stderrDone.cancel();
+    await subOut.cancel();
+    await subErr.cancel();
     spinner.cancel();
 
-    // Nettoyer la ligne du spinner
-    stdout.write('\r${' ' * 70}\r');
+    // Clear spinner
+    stdout.write('\r${" " * 60}\r');
 
-    // ── Analyser le résultat ──
-    final stdoutText = stdoutBuffer.toString();
-    final lines = stdoutText.split('\n');
-
-    // Trouver la DERNIÈRE ligne de résultat (ex: "02:04 +17: All tests passed!")
-    // ou la ligne d'erreur (ex: "02:28 +0 -2: Some tests failed.")
+    // ── Extraire le resultat final depuis stdout ──
+    final lines = stdoutBuf.toString().split('\n');
     String? resultLine;
     for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      // Les lignes de resultat flutter test finissent toujours par ":" suivi du message
-      if (RegExp(r'^\d{2}:\d{2}\s+\+\d+').hasMatch(trimmed)) {
-        resultLine = trimmed;
+      final t = line.trim();
+      if (t.isEmpty) continue;
+      if (RegExp(r'^\d{2}:\d{2}\s+\+\d+').hasMatch(t)) {
+        resultLine = t;
       }
     }
 
@@ -141,50 +125,36 @@ class TestCommand extends Command {
       stdout.writeln(resultLine);
     }
 
-    // ── Erreurs de compilation ──
-    final stderrText = stderrBuffer.toString().trim();
-    if (stderrText.isNotEmpty) {
-      // Extraire uniquement les lignes d'erreur pertinentes
-      final errorLines =
-          stderrText.split('\n').where((l) {
-            final t = l.trim();
-            if (t.isEmpty) return false;
-            // Garder les vraies erreurs, pas les lignes de contexte
-            return t.contains('Error:') ||
-                t.contains('error:') ||
-                t.contains('Compilation failed') ||
-                t.contains('To run this test again');
-          }).toList();
+    // ── Erreurs de compilation (stderr) — dedupliquées ──
+    final stderrLines = stderrBuf.toString().split('\n');
+    final errors = <String>{};
+    var hasErrors = false;
+    for (final line in stderrLines) {
+      final t = line.trim();
+      if (t.isEmpty) continue;
+      if (!t.contains('Error:') &&
+          !t.contains('Compilation failed') &&
+          !t.contains('To run this test again'))
+        continue;
 
-      if (errorLines.isNotEmpty) {
-        for (final line in errorLines) {
-          stderr.writeln(line);
-        }
-        print('');
-      }
-    }
-
-    // ── Aussi chercher les erreurs dans stdout (certains cas) ──
-    final stdoutErrors =
-        lines.where((l) {
-          final t = l.trim();
-          return t.contains('Error:') &&
-              !t.contains('loading') &&
-              !RegExp(r'^\d{2}:\d{2}').hasMatch(t);
-        }).toList();
-
-    if (stdoutErrors.isNotEmpty) {
-      for (final line in stdoutErrors) {
-        stderr.writeln(line);
+      if (errors.add(t)) {
+        // Première occurrence de cette erreur
+        stderr.writeln(t);
+        hasErrors = true;
       }
     }
 
     // ── Verdict ──
     print('');
     if (exitCode == 0) {
-      CliUI.success('Tous les tests passes');
+      // Compter les tests passés depuis le résultat
+      final match = RegExp(r'\+(\d+)').firstMatch(resultLine ?? '');
+      final count = match?.group(1) ?? '?';
+      CliUI.success('$count tests passed');
     } else {
-      CliUI.error('Certains tests ont echoue (exit code: $exitCode)');
+      final failMatch = RegExp(r'-(\d+)').firstMatch(resultLine ?? '');
+      final failCount = failMatch?.group(1) ?? 'some';
+      CliUI.error('$failCount test(s) failed');
     }
 
     //this.exitCode = exitCode;
@@ -199,33 +169,28 @@ class TestCommand extends Command {
     final ctrlTest =
         'test/features/$snakeName/presentation/controller/${snakeName}_controller_test.dart';
 
-    final repoExists = File(repoTest).existsSync();
-    final ctrlExists = File(ctrlTest).existsSync();
-
-    if (repoExists && ctrlExists) {
-      CliUI.info("Tests deja existants pour : $featureArg");
+    if (File(repoTest).existsSync() && File(ctrlTest).existsSync()) {
+      CliUI.info("Tests deja existants pour: $featureArg");
       return;
     }
 
-    CliUI.info("Generation des tests manquants pour : $featureArg ...");
     try {
       final projectName = _getProjectName();
-      await CliUI.withSpinner('Generation des tests', () async {
+      await CliUI.withSpinner('Generating tests', () async {
         await TestGenerator.generate(
           featureName: featureArg,
           projectName: projectName,
         );
       });
     } catch (e) {
-      CliUI.error("Erreur lors de la generation : $e");
+      CliUI.error("Generation echouee: $e");
     }
   }
 
   String _getProjectName() {
     final file = File('.cscm.yaml');
     if (file.existsSync()) {
-      final lines = file.readAsLinesSync();
-      for (final line in lines) {
+      for (final line in file.readAsLinesSync()) {
         if (line.startsWith('project_name:')) {
           return line.split(':').last.trim();
         }

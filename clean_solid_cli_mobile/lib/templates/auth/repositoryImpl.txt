@@ -14,7 +14,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:{{projectName}}/core/error/exceptions.dart';
 import 'package:{{projectName}}/core/error/failures.dart';
 import 'package:{{projectName}}/core/network/network_info.dart';
-import 'package:{{projectName}}/core/utils/typedef/typedefs.dart';
+import 'package:{{projectName}}/core/utils/typedefs.dart';
 import 'package:{{projectName}}/features/auth/data/source/auth_remote_source.dart';
 import 'package:{{projectName}}/features/auth/domain/entity/auth_entity.dart';
 import 'package:{{projectName}}/features/auth/domain/repository/auth_repository.dart';
@@ -33,7 +33,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = _remoteSource.getCurrentUser();
       return Right(user);
     } catch (e) {
-      return Left(UnexpectedFailure(e.toString(), "500"));
+      return Left(UnexpectedFailure(message: e.toString(), code: "500"));
     }
   }
 
@@ -95,9 +95,9 @@ class AuthRepositoryImpl implements AuthRepository {
       } on ApiException catch (e) {
         return Left(ApiFailure.fromException(e));
       } catch (e) {
-        return Left(UnexpectedFailure(e.toString(), "500"));
+        return Left(UnexpectedFailure(message: e.toString(), code: "500"));
       }
     }
-    return const Left(NetworkFailure("Pas de connexion Internet", "NET_001"));
+    return const Left(NetworkFailure(message: "Pas de connexion Internet", code: "NET_001"));
   }
 }
