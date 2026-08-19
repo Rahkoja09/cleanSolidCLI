@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
-import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 
 class UndoCommand extends Command {
   @override
@@ -50,7 +49,9 @@ class UndoCommand extends Command {
     CliUI.header('Undo : ${feature.pascalName}');
 
     // ── 1. Montrer les fichiers a supprimer ──
-    final allFiles = [...feature.filesCreated, ...feature.filesUpdated];
+    // Dedup: un fichier peut etre dans filesCreated ET filesUpdated (entity, model apres implementation)
+    final allFiles =
+        [...feature.filesCreated, ...feature.filesUpdated].toSet().toList();
     final existingFiles = allFiles.where((f) => File(f).existsSync()).toList();
     final deletedFiles = allFiles.where((f) => !File(f).existsSync()).toList();
 
@@ -60,14 +61,12 @@ class UndoCommand extends Command {
       return;
     }
 
-    print(
-        '  ${CliUI.dim('Files to remove')} (${existingFiles.length}):');
+    print('  ${CliUI.dim('Files to remove')} (${existingFiles.length}):');
     for (final f in existingFiles) {
       print('    ${CliUI.red('remove')}  $f');
     }
     if (deletedFiles.isNotEmpty) {
-      print(
-          '  ${CliUI.dim('Already deleted')} (${deletedFiles.length}):');
+      print('  ${CliUI.dim('Already deleted')} (${deletedFiles.length}):');
       for (final f in deletedFiles) {
         print('    ${CliUI.dim('gone')}    $f');
       }
@@ -76,14 +75,19 @@ class UndoCommand extends Command {
     // ── 2. Montrer le nettoyage injection ──
     print('');
     print('  ${CliUI.dim('Injection cleanup:')}');
-    print('    remove   _init${feature.pascalName}() from injection_container.dart');
-    print('    remove   ${feature.pascalName} case from success_error_listener.dart');
+    print(
+      '    remove   _init${feature.pascalName}() from injection_container.dart',
+    );
+    print(
+      '    remove   ${feature.pascalName} listener from success_error_listener.dart',
+    );
 
     // ── 3. SQL migration ──
     if (feature.sqlMigration != null) {
       print('');
       CliUI.warning(
-          'SQL migration ${feature.sqlMigration} will NOT be deleted');
+        'SQL migration ${feature.sqlMigration} will NOT be deleted',
+      );
       print('  ${CliUI.dim('(run manually if needed)')}');
     }
 
@@ -172,10 +176,7 @@ class UndoCommand extends Command {
     content = content.replaceAll(importPattern, '');
 
     // 2. Retirer _init<Feature>() call
-    content = content.replaceAll(
-      '  _init$pascal();\\n',
-      '',
-    );
+    content = content.replaceAll('  _init$pascal();', '');
 
     // 3. Retirer la methode _init<Feature> entiere
     final methodPattern = RegExp(
@@ -197,14 +198,24 @@ class UndoCommand extends Command {
 
     String content = file.readAsStringSync();
     final pascal = feature.pascalName;
+    final snake = feature.snakeName;
 
-    // Retirer le case dans le switch: if (failure is <Feature>Failure)
-    final casePattern = RegExp(
-      r"if \(failure is ${pascal}Failure\) \{[\\s\\S]*?\}\n?",
+    // 1. Retirer les imports de la feature
+    final importPattern = RegExp(
+      "import 'package:[^/]+/features/${snake}/[^']+';\\n",
       multiLine: true,
     );
-    content = content.replaceAll(casePattern, '');
+    content = content.replaceAll(importPattern, '');
 
+    // 2. Retirer le bloc ref.listen<FeatureStates>(featureControllerProvider, ...);
+    // Le bloc commence par "ref.listen<" et finit par "});"
+    final listenerPattern = RegExp(
+      'ref\\.listen<${pascal}States>\\(${snake}ControllerProvider, \\([^)]*\\) \\{[\\s\\S]*?\\}\\);',
+      multiLine: true,
+    );
+    content = content.replaceAll(listenerPattern, '');
+
+    // 3. Nettoyer les lignes vides multiples
     content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n');
     file.writeAsStringSync(content);
   }

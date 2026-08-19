@@ -128,7 +128,6 @@ class TestCommand extends Command {
     // ── Erreurs de compilation (stderr) — dedupliquées ──
     final stderrLines = stderrBuf.toString().split('\n');
     final errors = <String>{};
-    var hasErrors = false;
     for (final line in stderrLines) {
       final t = line.trim();
       if (t.isEmpty) continue;
@@ -140,7 +139,6 @@ class TestCommand extends Command {
       if (errors.add(t)) {
         // Première occurrence de cette erreur
         stderr.writeln(t);
-        hasErrors = true;
       }
     }
 
