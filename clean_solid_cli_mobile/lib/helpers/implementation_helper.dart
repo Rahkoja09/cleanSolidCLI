@@ -25,21 +25,40 @@ class ImplementationHelper {
     _generateEnumFiles(fields, snakeName);
 
     // 2. Injecter dans entity, model, remoteSource
+    // FIX: tracker combien de fichiers ont été effectivement modifiés
+    int injectedCount = 0;
+    int skippedCount = 0;
+    final skippedFiles = <String>[];
+
     for (var type in ImplementationType.values) {
       try {
         final filePath = _getFilePathForType(type, snakeName);
         final file = File(filePath);
 
-        if (!file.existsSync()) continue;
+        if (!file.existsSync()) {
+          skippedCount++;
+          skippedFiles.add(p.basename(filePath));
+          continue; // FIX: log au lieu de skip silencieux
+        }
 
         String content = file.readAsStringSync();
 
         switch (type) {
           case ImplementationType.entityImpl:
-            content = Injections.injectEntity(content, fields, pascalName, projectName);
+            content = Injections.injectEntity(
+              content,
+              fields,
+              pascalName,
+              projectName,
+            );
             break;
           case ImplementationType.modelImpl:
-            content = Injections.injectModel(content, fields, pascalName, projectName);
+            content = Injections.injectModel(
+              content,
+              fields,
+              pascalName,
+              projectName,
+            );
             break;
           case ImplementationType.remoteSourceImpl:
             content = Injections.injectRemoteSource(content, fields);
@@ -47,10 +66,20 @@ class ImplementationHelper {
         }
 
         file.writeAsStringSync(content);
+        injectedCount++;
         CliUI.fileUpdated(p.basename(filePath));
       } catch (e) {
-        CliUI.error('Implémentation ${type.name} : $e');
+        CliUI.error('Implementation ${type.name} : $e');
       }
+    }
+
+    // FIX: feedback clair sur ce qui s'est passé
+    if (skippedCount > 0) {
+      CliUI.warning(
+        '$skippedCount fichier(s) non trouve(s), impossible d\'injecter les champs :\n'
+        '    ${skippedFiles.map((f) => "- $f").join("\n    ")}\n'
+        '  Cause probable : les templates n\'ont pas ete generes (verifiez la resolution des templates).',
+      );
     }
 
     // 3. Generer la migration SQL
@@ -71,7 +100,8 @@ class ImplementationHelper {
     }
 
     for (final field in enumFields) {
-      final filePath = 'lib/features/$snakeName/domain/enums/${field.name}_enum.dart';
+      final filePath =
+          'lib/features/$snakeName/domain/enums/${field.name}_enum.dart';
       final file = File(filePath);
 
       if (file.existsSync()) {
@@ -108,11 +138,32 @@ class ImplementationHelper {
   static String _getFilePathForType(ImplementationType type, String snake) {
     switch (type) {
       case ImplementationType.entityImpl:
-        return p.join('lib', 'features', snake, 'domain', 'entity', '${snake}_entity.dart');
+        return p.join(
+          'lib',
+          'features',
+          snake,
+          'domain',
+          'entity',
+          '${snake}_entity.dart',
+        );
       case ImplementationType.modelImpl:
-        return p.join('lib', 'features', snake, 'data', 'model', '${snake}_model.dart');
+        return p.join(
+          'lib',
+          'features',
+          snake,
+          'data',
+          'model',
+          '${snake}_model.dart',
+        );
       case ImplementationType.remoteSourceImpl:
-        return p.join('lib', 'features', snake, 'data', 'source', '${snake}_remote_source.dart');
+        return p.join(
+          'lib',
+          'features',
+          snake,
+          'data',
+          'source',
+          '${snake}_remote_source.dart',
+        );
     }
   }
 }
