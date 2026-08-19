@@ -3,11 +3,18 @@ import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
+import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:clean_solid_cli_mobile/utils/template_resolver.dart';
 import 'package:path/path.dart' as p;
 
 /// Generates source files from templates for a given feature.
 class FileHelper {
+  /// Active le tracking de fichiers pour la commande en cours.
+  static void startTracking(FileTracker tracker) => activeTracker = tracker;
+
+  /// Desactive le tracking.
+  static void stopTracking() => activeTracker = null;
+
   static Future<void> generateFormTemplate({
     required String featureName,
     required String templateName,
@@ -29,9 +36,6 @@ class FileHelper {
       featureName: snakeFeatureName,
     );
 
-    // Debug : afficher le nom de projet résolu (à retirer une fois le bug corrigé)
-    // CliUI.info('projectName = $projectName');
-
     content = content.replaceAll('{{projectName}}', projectName);
     content = content.replaceAll('{{name}}', capitalizedClassName);
     content = content.replaceAll('{{snakeName}}', snakeFeatureName);
@@ -44,6 +48,7 @@ class FileHelper {
 
     file.writeAsStringSync(content);
     CliUI.fileCreated(p.basename(targetPath));
+    activeTracker?.trackCreated(targetPath);
   }
 
   static String generateAndGetTargetPath({

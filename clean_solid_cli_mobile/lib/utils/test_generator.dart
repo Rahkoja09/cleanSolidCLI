@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
+import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:clean_solid_cli_mobile/utils/template_resolver.dart';
 import 'package:path/path.dart' as p;
 
@@ -70,5 +71,6 @@ class TestGenerator {
     Directory(targetDir).createSync(recursive: true);
     file.writeAsStringSync(content);
     CliUI.fileCreated(fileName);
+    activeTracker?.trackCreated(targetPath);
   }
 }

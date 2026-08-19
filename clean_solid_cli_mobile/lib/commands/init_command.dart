@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
+import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:clean_solid_cli_mobile/utils/config_reader.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
-import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 
 class InitCommand extends Command {
   @override
@@ -31,7 +31,7 @@ class InitCommand extends Command {
   }
 
   @override
-  void run() {
+  Future<void> run() async {
     final projectName =
         (argResults!['name'] as String?) ??
         (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
@@ -64,7 +64,13 @@ class InitCommand extends Command {
       );
     }
 
-    CliUI.header('Initialisation du projet : $snakeName');
+    print('\n itialisation du projet [$snakeName]...\n');
+
+    // AVANT ConfigReader.createConfig(), ajouter :
+    final parentYaml = File('.cscm.yaml');
+    if (await parentYaml.exists()) {
+      await parentYaml.delete();
+    }
 
     // 1. Créer le .cscm.yaml
     ConfigReader.createConfig(projectName: snakeName, backend: backend);
@@ -72,93 +78,25 @@ class InitCommand extends Command {
     // 2. Générer la structure complète
     _createProjectStructure(snakeName, backend);
 
-    CliUI.success('Projet [$snakeName] cree avec succes');
-    CliUI.nextSteps([
-      'cd $snakeName',
-      'flutter pub get',
-      'Configurer le fichier .env avec vos cles ${backend == 'supabase' ? 'Supabase' : backend}',
-      if (backend == 'supabase')
-        'Utiliser l\'alias cscm ou dart run ../clean_solid_cli_mobile',
-      'cscm create ma_feature -i "nom:string,prix:double"',
-    ]);
+    print('\n Projet [$snakeName] créé avec succès !');
+    print('\nProchaines étapes :');
+    print('   1. cd $snakeName');
+    print('   2. flutter pub get');
+    print(
+      '   3. Configurer le fichier .env avec vos clés ${backend == 'supabase' ? 'Supabase' : backend}',
+    );
+    if (backend == 'supabase') {
+      print(
+        '   4. dart pub global activate --source path ../clean_solid_cli_mobile',
+      );
+    }
+    print('   5. cscm create ma_feature -i "nom:string,prix:double"');
   }
 
-  /// Vérifie que tous les fichiers générés utilisent le bon nom de package.
-  /// Si un fichier contient un ancien nom de package, le corrige.
-  void _verifyPackageNames(String expectedName) {
-    final projectDir = Directory(expectedName);
-    if (!projectDir.existsSync()) return;
-
-    final dartFiles = projectDir
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.dart'));
-
-    var fixed = 0;
-    for (final file in dartFiles) {
-      final content = file.readAsStringSync();
-      // Détecter tout "package:XXX/" qui n'est pas le nom attendu
-      final wrongPattern = RegExp(r"package:([^/]+)/");
-      final matches = wrongPattern.allMatches(content);
-
-      for (final match in matches) {
-        final pkgName = match.group(1);
-        if (pkgName != null &&
-            pkgName != expectedName &&
-            pkgName != 'flutter' &&
-            pkgName != 'flutter_test') {
-          // C'est un package tiers ou un ancien nom de projet — vérifier
-          // si c'est bien un ancien nom de projet (pas un package pub)
-          final isPubPackage = [
-            'dartz',
-            'equatable',
-            'get_it',
-            'go_router',
-            'flutter_riverpod',
-            'riverpod',
-            'supabase_flutter',
-            'internet_connection_checker_plus',
-            'flutter_screenutil',
-            'shared_preferences',
-            'path_provider',
-            'toastification',
-            'loading_animation_widget',
-            'cached_network_image',
-            'image_picker',
-            'permission_handler',
-            'share_plus',
-            'skeletonizer',
-            'iconsax_flutter',
-            'json_annotation',
-            'uuid',
-            'rxdart',
-            'url_launcher',
-            'path',
-            'collection',
-          ].contains(pkgName);
-
-          if (!isPubPackage) {
-            // Ancien nom de projet détecté — corriger
-            final corrected = content.replaceAll(
-              'package:$pkgName/',
-              'package:$expectedName/',
-            );
-            file.writeAsStringSync(corrected);
-            fixed++;
-            CliUI.warning(
-              '${file.path.split('/').last} : package:$pkgName → package:$expectedName',
-            );
-          }
-        }
-      }
-    }
-
-    if (fixed > 0) {
-      CliUI.warning('$fixed fichier(s) corriges avec un ancien nom de package');
-    }
-  }
-
-  void _createProjectStructure(String name, String backend) {
+  Future<void> _createProjectStructure(String name, String backend) async {
+    final projectName =
+        (argResults!['name'] as String?) ??
+        (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
     final projectDir = Directory(name);
     if (!projectDir.existsSync()) {
       projectDir.createSync(recursive: true);
@@ -182,16 +120,16 @@ class InitCommand extends Command {
       '$libDir/shared/widgets/buttons',
       '$libDir/shared/widgets/inputs',
       '$libDir/features',
-      '$libDir/assets/medias/icons',
-      '$libDir/assets/medias/animations',
-      '$libDir/assets/theme',
-      '$libDir/assets/fonts',
+      '${projectDir.path}/assets/medias/icons',
+      '${projectDir.path}/assets/medias/animations',
+      '${projectDir.path}/assets/theme',
+      '${projectDir.path}/assets/fonts',
     ];
 
     for (final dir in directories) {
       Directory(dir).createSync(recursive: true);
+      print('    ${dir.replaceFirst('${projectDir.path}/', '')}');
     }
-    CliUI.success('${directories.length} dossiers crees');
 
     // --- FICHIERS DE CONFIG ---
     _writeFile('$libDir/config/constants/app_const.dart', _appConst(name));
@@ -215,7 +153,7 @@ class InitCommand extends Command {
     _writeFile('$libDir/core/error/error_manager.dart', _errorManager());
     _writeFile('$libDir/core/network/network_info.dart', _networkInfo());
     _writeFile('$libDir/core/router/app_router.dart', _appRouter(name));
-    _writeFile('$libDir/core/utils/typedefs.dart', _typedefs());
+    _writeFile('$libDir/core/utils/typedefs.dart', _typedefs(name));
 
     // --- ERROR LISTENER ---
     _writeFile(
@@ -250,14 +188,22 @@ class InitCommand extends Command {
       configFile.copySync('${projectDir.path}/.cscm.yaml');
     }
 
-    // ── Vérification post-génération ──
-    _verifyPackageNames(name);
+    final snakeName = projectName!.replaceAll(' ', '_').toLowerCase();
+
+    // Creer le .cscm-state.yaml dans le projet
+    _createProjectState(projectDir.path, snakeName, backend);
+
+    // Après la copie dans le projet, nettoyer le parent
+    final parentYaml = File('.cscm.yaml');
+    if (await parentYaml.exists()) {
+      await parentYaml.delete();
+    }
 
     // Créer un .gitkeep dans les dossiers vides
     final gitkeeps = [
-      '$libDir/assets/medias/icons',
-      '$libDir/assets/medias/animations',
-      '$libDir/assets/fonts',
+      '${projectDir.path}/assets/medias/icons',
+      '${projectDir.path}/assets/medias/animations',
+      '${projectDir.path}/assets/fonts',
       '$libDir/features',
     ];
     for (final gk in gitkeeps) {
@@ -268,7 +214,33 @@ class InitCommand extends Command {
   void _writeFile(String path, String content) {
     final file = File(path);
     file.writeAsStringSync(content);
-    CliUI.fileCreated(path.split('/').last);
+    print('    ${path.split('/').last}');
+  }
+
+  void _createProjectState(String projectPath, String name, String backend) {
+    final statePath = '$projectPath/${ProjectState.stateFileName}';
+    final comment =
+        '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
+        '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
+    final now = DateTime.now().toUtc().toIso8601String();
+    final yaml = '''version: 1
+project_name: $name
+created_at: "$now"
+backend: $backend
+features: []
+auth:
+  configured: false
+  configured_at: ""
+  email: false
+  social: false
+  files_created: []
+actions:
+  - timestamp: "$now"
+    command: init
+    args:
+      - $name
+''';
+    File(statePath).writeAsStringSync(comment + yaml);
   }
 
   // ═══════════════════════════════════════════════════
@@ -503,7 +475,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 });
 ''';
 
-  String _typedefs() => '''
+  String _typedefs(String name) => '''
 import 'package:dartz/dartz.dart';
 import 'package:$name/core/error/failures.dart';
 
