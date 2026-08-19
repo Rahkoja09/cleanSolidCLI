@@ -29,6 +29,9 @@ class FileHelper {
       featureName: snakeFeatureName,
     );
 
+    // Debug : afficher le nom de projet résolu (à retirer une fois le bug corrigé)
+    // CliUI.info('projectName = $projectName');
+
     content = content.replaceAll('{{projectName}}', projectName);
     content = content.replaceAll('{{name}}', capitalizedClassName);
     content = content.replaceAll('{{snakeName}}', snakeFeatureName);

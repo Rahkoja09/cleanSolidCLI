@@ -28,9 +28,19 @@ class CliUI {
     final line = '─' * (_w - 4);
     print('');
     print(gray('  ┌$line┐'));
-    print(gray('  │') + bold('  CSCM · $title') + ' ' * (_w - 11 - title.length) + gray('│'));
+    print(
+      gray('  │') +
+          bold('  CSCM · $title') +
+          ' ' * (_w - 11 - title.length) +
+          gray('│'),
+    );
     if (subtitle != null) {
-      print(gray('  │') + '  $subtitle' + ' ' * (_w - 4 - subtitle.length) + gray('│'));
+      print(
+        gray('  │') +
+            '  $subtitle' +
+            ' ' * (_w - 4 - subtitle.length) +
+            gray('│'),
+      );
     }
     print(gray('  └$line┘'));
     print('');
@@ -85,8 +95,20 @@ class CliUI {
     print('  ${cyan("→")}  $msg');
   }
 
+  // ─── Loading (sans retour à la ligne, à clear manuellement) ───
+  static void loading(String msg) {
+    stdout.write('  ${cyan("⠋")}  $msg');
+  }
+
+  static void clearLine() {
+    stdout.write('\r${' ' * 80}\r');
+  }
+
   // ─── Spinner ───────────────────────────────
-  static Future<T> withSpinner<T>(String message, Future<T> Function() task) async {
+  static Future<T> withSpinner<T>(
+    String message,
+    Future<T> Function() task,
+  ) async {
     const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     var frame = 0;
     var running = true;
