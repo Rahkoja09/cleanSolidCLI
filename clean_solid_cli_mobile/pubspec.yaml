@@ -1,6 +1,17 @@
 name: clean_solid_cli_mobile
-description: CLI tool for Clean Architecture + solid principle scaffolding.
-version: 1.1.0
+description: 'CLI tool for Clean Architecture + Solid Principle scaffolding in Flutter projects.'
+version: 2.0.0
+homepage: https://github.com/Rahkoja09/cleanSolidCLI
+repository: https://github.com/Rahkoja09/cleanSolidCLI
+documentation: https://github.com/Rahkoja09/cleanSolidCLI#readme
+issue_tracker: https://github.com/Rahkoja09/cleanSolidCLI/issues
+topics:
+  - cli
+  - flutter
+  - clean-architecture
+  - solid-principles
+  - code-generator
+  - scaffolding
 
 environment:
   sdk: ^3.7.0

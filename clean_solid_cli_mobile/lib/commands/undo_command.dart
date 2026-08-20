@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
+import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
 
 class UndoCommand extends Command {
   @override
@@ -16,6 +17,13 @@ class UndoCommand extends Command {
       'force',
       abbr: 'f',
       help: 'Supprimer sans confirmation',
+      defaultsTo: false,
+      negatable: false,
+    );
+    argParser.addFlag(
+      'commit',
+      abbr: 'c',
+      help: 'Commiter automatiquement apres l\'annulation',
       defaultsTo: false,
       negatable: false,
     );
@@ -36,6 +44,7 @@ class UndoCommand extends Command {
 
     final featureName = argResults!.rest.first;
     final force = argResults?['force'] as bool? ?? false;
+    final autoCommit = argResults?['commit'] as bool? ?? false;
 
     final state = ProjectState.load();
     final feature = state.findFeature(featureName);
@@ -49,7 +58,6 @@ class UndoCommand extends Command {
     CliUI.header('Undo : ${feature.pascalName}');
 
     // ── 1. Montrer les fichiers a supprimer ──
-    // Dedup: un fichier peut etre dans filesCreated ET filesUpdated (entity, model apres implementation)
     final allFiles =
         [...feature.filesCreated, ...feature.filesUpdated].toSet().toList();
     final existingFiles = allFiles.where((f) => File(f).existsSync()).toList();
@@ -105,13 +113,14 @@ class UndoCommand extends Command {
     // ── 5. Executer ──
     var removedCount = 0;
 
+    // Collect files for potential commit BEFORE deleting
+    final filesForCommit = <String>[...existingFiles];
+
     // Supprimer les fichiers
     for (final filePath in existingFiles) {
       try {
         File(filePath).deleteSync();
         removedCount++;
-
-        // Supprimer le dossier parent si vide
         _removeEmptyParentDirs(filePath);
       } catch (e) {
         CliUI.warning('Impossible de supprimer $filePath: $e');
@@ -120,25 +129,43 @@ class UndoCommand extends Command {
 
     // Nettoyer injection_container.dart
     _cleanInjectionContainer(feature);
+    filesForCommit.add('lib/core/di/injection_container.dart');
 
     // Nettoyer success_error_listener.dart
     _cleanErrorListener(feature);
+    filesForCommit
+        .add('lib/core/mainErrorListener/success_error_listener.dart');
 
     // Retirer du state
     _removeFromState(feature.snakeName);
+    filesForCommit.add(ProjectState.stateFileName);
 
     print('');
     CliUI.success('$removedCount file(s) removed');
     CliUI.success('injection_container.dart cleaned');
     CliUI.success('success_error_listener.dart cleaned');
     CliUI.success('Feature [${feature.pascalName}] removed');
+
+    // ── Auto commit ──
+    if (autoCommit) {
+      _autoCommit(feature.pascalName, filesForCommit);
+    }
+  }
+
+  void _autoCommit(String featureName, List<String> files) {
+    if (!GitHelper.isGitInstalled() || !GitHelper.isGitRepo()) return;
+
+    final message = 'cscm: undo $featureName';
+    final result = GitHelper.commit(message: message, files: files);
+    if (result != null) {
+      CliUI.success('Auto-commit: $message');
+    }
   }
 
   void _removeEmptyParentDirs(String filePath) {
     final dir = File(filePath).parent;
     if (!dir.existsSync()) return;
 
-    // Remonter jusqu'a features/<name>/ mais pas plus haut
     final parts = dir.path.split(Platform.pathSeparator);
     final featureIdx = parts.indexOf('features');
     if (featureIdx < 0) return;
@@ -168,9 +195,9 @@ class UndoCommand extends Command {
     String content = file.readAsStringSync();
     final pascal = feature.pascalName;
 
-    // 1. Retirer l'import block (4 lignes)
+    // 1. Retirer les imports de la feature
     final importPattern = RegExp(
-      "import 'package:[^/]+/features/${feature.snakeName}/[^']+';\\n",
+      "import 'package:[^/]+/features/${feature.snakeName}/[^']+';\n",
       multiLine: true,
     );
     content = content.replaceAll(importPattern, '');
@@ -202,13 +229,12 @@ class UndoCommand extends Command {
 
     // 1. Retirer les imports de la feature
     final importPattern = RegExp(
-      "import 'package:[^/]+/features/${snake}/[^']+';\\n",
+      "import 'package:[^/]+/features/${snake}/[^']+';\n",
       multiLine: true,
     );
     content = content.replaceAll(importPattern, '');
 
     // 2. Retirer le bloc ref.listen<FeatureStates>(featureControllerProvider, ...);
-    // Le bloc commence par "ref.listen<" et finit par "});"
     final listenerPattern = RegExp(
       'ref\\.listen<${pascal}States>\\(${snake}ControllerProvider, \\([^)]*\\) \\{[\\s\\S]*?\\}\\);',
       multiLine: true,

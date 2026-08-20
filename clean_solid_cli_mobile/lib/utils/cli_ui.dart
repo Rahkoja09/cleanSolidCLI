@@ -1,24 +1,41 @@
 import 'dart:async';
 import 'dart:io';
 
-/// CLI output — clig.dev compliant.
-/// No emojis. Color is intentional. Brief messages.
-/// Auto-disables color when stdout is not a TTY or NO_COLOR is set.
+/// CSCM CLI output.
+///
+/// Design principles:
+/// - Minimal
+/// - Technical
+/// - Consistent
+/// - No emojis
+/// - ANSI when available
+/// - Fully usable with NO_COLOR
 class CliUI {
-  // ── Colors ──────────────────────────────────────
+  // ═══════════════════════════════════════════════
+  // ANSI
+  // ═══════════════════════════════════════════════
+
   static const _reset = '\x1b[0m';
+
   static const _bold = '\x1b[1m';
   static const _dim = '\x1b[2m';
+
   static const _red = '\x1b[31m';
   static const _green = '\x1b[32m';
   static const _yellow = '\x1b[33m';
+
   static const _cyan = '\x1b[36m';
+  static const _magenta = '\x1b[35m';
+
   static const _gray = '\x1b[90m';
 
   static final bool _color = _detectColor();
 
   static bool _detectColor() {
-    if (Platform.environment.containsKey('NO_COLOR')) return false;
+    if (Platform.environment.containsKey('NO_COLOR')) {
+      return false;
+    }
+
     try {
       return stdout.supportsAnsiEscapes;
     } catch (_) {
@@ -26,47 +43,183 @@ class CliUI {
     }
   }
 
-  static String _c(String color, String text) =>
-      _color ? '$color$text$_reset' : text;
-  static String bold(String t) => _c(_bold, t);
-  static String dim(String t) => _c(_dim, t);
-  static String green(String t) => _c(_green, t);
-  static String red(String t) => _c(_red, t);
-  static String yellow(String t) => _c(_yellow, t);
-  static String cyan(String t) => _c(_cyan, t);
-  static String gray(String t) => _c(_gray, t);
+  static String _c(String color, String text) {
+    if (!_color) return text;
+    return '$color$text$_reset';
+  }
 
-  // ── Header ─────────────────────────────────────
-  static void header(String title) {
-    final line = gray('${"─" * 3} $title ${"─" * 3}');
+  static String bold(String text) => _c(_bold, text);
+  static String dim(String text) => _c(_dim, text);
+
+  static String red(String text) => _c(_red, text);
+  static String green(String text) => _c(_green, text);
+  static String yellow(String text) => _c(_yellow, text);
+
+  static String cyan(String text) => _c(_cyan, text);
+  static String magenta(String text) => _c(_magenta, text);
+  static String gray(String text) => _c(_gray, text);
+
+  // ═══════════════════════════════════════════════
+  // LOGO
+  // ═══════════════════════════════════════════════
+
+  static void logo({
+    String subtitle = 'Command Line Interface',
+    String? version,
+  }) {
     print('');
-    print(line);
+
+    final versionText = version != null ? ' ${dim('v$version')}' : '';
+
+    print(gray('  ╭──────────────────────────────────────────────╮'));
+    print(
+      gray('  │') +
+          '                                              ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '    ${magenta('██████╗')}${cyan('███████╗')} ${magenta('██████╗')}${cyan('███╗   ███╗')}   ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '   ${magenta('██╔════╝')}${cyan('██╔════╝')}${magenta('██╔════╝')}${cyan('████╗ ████║')}   ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '   ${magenta('██║     ')}${cyan('███████╗')}${magenta('██║     ')}${cyan('██╔████╔██║')}   ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '   ${magenta('██║     ')}${cyan('╚════██║')}${magenta('██║     ')}${cyan('██║╚██╔╝██║')}   ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '   ${magenta('╚██████╗')}${cyan('███████║')}${magenta('╚██████╗')}${cyan('██║ ╚═╝ ██║')}   ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '    ${magenta('╚═════╝')}${cyan('╚══════╝')} ${magenta('╚═════╝')}${cyan('╚═╝     ╚═╝')}   ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '                                              ' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '    ${dim(subtitle)}$versionText${' ' * _logoPadding(subtitle, version)}' +
+          gray('│'),
+    );
+
+    print(
+      gray('  │') +
+          '                                              ' +
+          gray('│'),
+    );
+    print(gray('  ╰──────────────────────────────────────────────╯'));
+
     print('');
   }
 
-  // ── Section ────────────────────────────────────
+  static int _logoPadding(String subtitle, String? version) {
+    final content =
+        4 + subtitle.length + (version != null ? 4 + version.length : 0);
+    return (44 - content).clamp(0, 44);
+  }
+
+  // ═══════════════════════════════════════════════
+  // HEADER
+  // ═══════════════════════════════════════════════
+
+  static void header(String title, {String? description}) {
+    print('');
+
+    print('  ${magenta('◆')} ${bold(title.toUpperCase())}');
+
+    print('  ${gray('─' * (title.length + 2))}');
+
+    if (description != null && description.isNotEmpty) {
+      print('  ${dim(description)}');
+    }
+
+    print('');
+  }
+
+  // ═══════════════════════════════════════════════
+  // SECTION
+  // ═══════════════════════════════════════════════
+
   static void section(String title, {String? count}) {
-    final suffix = count != null ? dim(' ($count)') : '';
-    print('  ${bold(title)}$suffix');
-    print('  ${gray('─' * title.length)}');
+    final suffix = count != null ? ' ${dim('[$count]')}' : '';
+
+    print('');
+    print('  ${cyan('◆')} ${bold(title)}$suffix');
+
+    print('    ${gray('─' * title.length)}');
+
+    print('');
   }
 
-  // ── Status ────────────────────────────────────
-  static void success(String msg) => _status('ok', msg, _green);
-  static void error(String msg) => _status('err', msg, _red);
-  static void warning(String msg) => _status('warn', msg, _yellow);
-  static void info(String msg) => _status('info', msg, _cyan);
+  // ═══════════════════════════════════════════════
+  // STATUS
+  // ═══════════════════════════════════════════════
 
-  static void _status(String label, String msg, String color) {
+  static void success(String message) {
+    _status('ok', message, _green);
+  }
+
+  static void error(String message) {
+    _status('err', message, _red);
+  }
+
+  static void warning(String message) {
+    _status('warn', message, _yellow);
+  }
+
+  static void info(String message) {
+    _status('info', message, _cyan);
+  }
+
+  static void _status(String label, String message, String color) {
     final tag = _c(color, label.padRight(5));
-    print('  $tag  $msg');
+
+    print('  $tag  $message');
   }
 
-  // ── File ──────────────────────────────────────
-  static void fileCreated(String name) => _fileLine('create', name, _green);
-  static void fileSkipped(String name, {String reason = 'exists'}) =>
-      _fileLine('skip', name, _gray, note: reason);
-  static void fileUpdated(String name) => _fileLine('update', name, _cyan);
+  // ═══════════════════════════════════════════════
+  // FILES
+  // ═══════════════════════════════════════════════
+
+  static void fileCreated(String name) {
+    _fileLine('create', name, _green);
+  }
+
+  static void fileUpdated(String name) {
+    _fileLine('update', name, _cyan);
+  }
+
+  static void fileSkipped(String name, {String reason = 'exists'}) {
+    _fileLine('skip', name, _gray, note: reason);
+  }
+
+  static void fileDeleted(String name) {
+    _fileLine('delete', name, _red);
+  }
 
   static void _fileLine(
     String action,
@@ -75,88 +228,214 @@ class CliUI {
     String? note,
   }) {
     final tag = _c(color, action.padRight(7));
-    final noteStr = note != null ? '  ${dim('($note)')}' : '';
-    print('    $tag  $name$noteStr');
+
+    final noteText = note != null ? '  ${dim('($note)')}' : '';
+
+    print('    ${gray('├─')} $tag  $name$noteText');
   }
 
-  // ── Next Steps ────────────────────────────────
-  static void nextSteps(List<String> steps) {
+  // ═══════════════════════════════════════════════
+  // TREE
+  // ═══════════════════════════════════════════════
+
+  static void tree(String root, List<String> items) {
     print('');
-    print('  ${bold('Next:')}');
-    for (var i = 0; i < steps.length; i++) {
-      print('    ${dim('${i + 1}.')}  ${steps[i]}');
+
+    print('  ${magenta('◆')} ${bold(root)}');
+
+    for (var i = 0; i < items.length; i++) {
+      final last = i == items.length - 1;
+
+      final branch = last ? '└─' : '├─';
+
+      print('    ${gray(branch)} ${items[i]}');
     }
+
     print('');
   }
 
-  // ── Hint ──────────────────────────────────────
-  static void hint(String msg) {
-    print('  ${dim('>')}  $msg');
+  // ═══════════════════════════════════════════════
+  // NEXT STEPS
+  // ═══════════════════════════════════════════════
+
+  static void nextSteps(List<String> steps) {
+    if (steps.isEmpty) return;
+
+    print('');
+    print('  ${cyan('◆')} ${bold('Next steps')}');
+
+    print('');
+
+    for (var i = 0; i < steps.length; i++) {
+      final number = (i + 1).toString().padLeft(2);
+
+      print('    ${dim(number)}  ${steps[i]}');
+    }
+
+    print('');
   }
 
-  // ── Summary Box (kept for compat) ─────────────
-  static void summary(String content) {
+  // ═══════════════════════════════════════════════
+  // HINT
+  // ═══════════════════════════════════════════════
+
+  static void hint(String message) {
+    print('  ${gray('›')}  ${dim(message)}');
+  }
+
+  // ═══════════════════════════════════════════════
+  // COMMAND
+  // ═══════════════════════════════════════════════
+
+  static void command(String command, {String? description}) {
+    print(
+      '    ${magenta('\$')} ${bold(command)}'
+      '${description != null ? '  ${dim(description)}' : ''}',
+    );
+  }
+
+  // ═══════════════════════════════════════════════
+  // SUMMARY
+  // ═══════════════════════════════════════════════
+
+  static void summary(String content, {String? title}) {
     final lines = content.split('\n');
-    final maxLen = lines.map((l) => l.length).fold(0, (a, b) => a > b ? a : b);
-    final pad = maxLen + 4;
+
+    final visibleLengths = lines.map((line) => line.length);
+
+    final maxLength = visibleLengths.fold<int>(0, (a, b) => a > b ? a : b);
+
+    final width = maxLength + 4;
+
     print('');
-    print(gray('  ┌${"─" * pad}┐'));
-    for (final l in lines) {
-      final inner = '  $l';
-      final trailing = pad - l.length - 2;
+
+    if (title != null) {
+      print('  ${magenta('╭')} ${bold(title)}');
+    } else {
+      print('  ${magenta('╭')}${gray('─' * width)}${magenta('╮')}');
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      final padding = width - line.length - 2;
+
       print(
-        gray('  │') + inner + (trailing > 0 ? ' ' * trailing : '') + gray('│'),
+        '  ${magenta('│')} '
+        '$line'
+        '${' ' * (padding > 0 ? padding : 0)} '
+        '${magenta('│')}',
       );
     }
-    print(gray('  └${"─" * pad}┘'));
+
+    print('  ${magenta('╰')}${gray('─' * width)}${magenta('╯')}');
+
+    print('');
   }
 
-  // ── Spinner ───────────────────────────────────
+  // ═══════════════════════════════════════════════
+  // PROGRESS
+  // ═══════════════════════════════════════════════
+
+  static void progress(String message, int current, int total) {
+    if (total <= 0) return;
+
+    final percentage = ((current / total) * 100).clamp(0, 100).toInt();
+
+    const width = 24;
+
+    final filled = ((percentage / 100) * width).round();
+
+    final empty = width - filled;
+
+    final bar =
+        '${magenta('█' * filled)}'
+        '${gray('░' * empty)}';
+
+    stdout.write(
+      '\r  $bar '
+      '${percentage.toString().padLeft(3)}% '
+      '${dim(message)}',
+    );
+
+    if (current >= total) {
+      print('');
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // SPINNER
+  // ═══════════════════════════════════════════════
+
   static Future<T> withSpinner<T>(
     String message,
     Future<T> Function() task,
   ) async {
-    const frames = ['/', '-', '\\', '|'];
+    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
     var frame = 0;
     var running = true;
-    var currentLen = 0;
 
-    final timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    final timer = Timer.periodic(const Duration(milliseconds: 80), (_) {
       if (!running) return;
-      final text = '  ${cyan(frames[frame])}  $message';
-      // Clear previous line
-      if (currentLen > 0) {
-        stdout.write('\r${" " * currentLen}\r');
-      }
-      stdout.write(text);
-      currentLen = text.length;
+
+      stdout.write('\r  ${cyan(frames[frame])}  $message');
+
       frame = (frame + 1) % frames.length;
     });
+
     try {
       final result = await task();
+
       running = false;
       timer.cancel();
-      // Clear spinner line
-      if (currentLen > 0) {
-        stdout.write('\r${" " * currentLen}\r');
-      }
-      final tag = _c(_green, 'ok'.padRight(5));
-      print('  $tag  $message');
+
+      clearLine();
+
+      success(message);
+
       return result;
-    } catch (e) {
+    } catch (_) {
       running = false;
       timer.cancel();
-      if (currentLen > 0) {
-        stdout.write('\r${" " * currentLen}\r');
-      }
-      final tag = _c(_red, 'err'.padRight(5));
-      print('  $tag  $message');
+
+      clearLine();
+
+      error(message);
+
       rethrow;
     }
   }
 
-  /// Clear the current line (useful before printing final output).
+  // ═══════════════════════════════════════════════
+  // DIVIDER
+  // ═══════════════════════════════════════════════
+
+  static void divider() {
+    print('  ${gray('─' * 46)}');
+  }
+
+  // ═══════════════════════════════════════════════
+  // CLEAR LINE
+  // ═══════════════════════════════════════════════
+
   static void clearLine() {
-    stdout.write('\r${" " * 80}\r');
+    stdout.write('\r${' ' * 80}\r');
+  }
+
+  // ═══════════════════════════════════════════════
+  // FOOTER
+  // ═══════════════════════════════════════════════
+
+  static void footer({String? message}) {
+    print('');
+
+    if (message != null) {
+      print('  ${gray('─' * 46)}');
+
+      print('  ${dim(message)}');
+    }
+
+    print('');
   }
 }

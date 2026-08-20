@@ -12,6 +12,7 @@ import 'package:clean_solid_cli_mobile/utils/test_generator.dart';
 import 'package:clean_solid_cli_mobile/utils/interactive_prompt.dart';
 import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:clean_solid_cli_mobile/utils/field_parser.dart';
+import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
 
 class CreateNewFeature extends Command {
   @override
@@ -37,11 +38,19 @@ class CreateNewFeature extends Command {
       defaultsTo: false,
       negatable: false,
     );
+    argParser.addFlag(
+      'commit',
+      abbr: 'c',
+      help: 'Commiter automatiquement apres la creation',
+      defaultsTo: false,
+      negatable: false,
+    );
   }
 
   @override
   Future<void> run() async {
     final isInteractive = argResults?['interactive'] as bool? ?? false;
+    final autoCommit = argResults?['commit'] as bool? ?? false;
     String featureName;
     String? fieldsInput;
 
@@ -118,16 +127,6 @@ class CreateNewFeature extends Command {
 
           // Parser les champs pour le state
           parsedFields = FieldParser.parse(fieldsInput);
-          for (final f in parsedFields) {
-            if (f is Field) {
-              tracker.trackUpdated(
-                'lib/features/$snakeFeatureName/domain/entity/${snakeFeatureName}_entity.dart',
-              );
-              tracker.trackUpdated(
-                'lib/features/$snakeFeatureName/data/model/${snakeFeatureName}_model.dart',
-              );
-            }
-          }
         } catch (e) {
           CliUI.error('Erreur d\'implementation : $e');
         }
@@ -171,8 +170,26 @@ class CreateNewFeature extends Command {
       CliUI.nextSteps([
         'Implementez l\'UI dans lib/features/$snakeFeatureName/presentation/pages/${snakeFeatureName}_page.dart',
       ]);
+
+      // ── Auto commit ──
+      if (autoCommit) {
+        _autoCommit(featureName, tracker);
+      }
     } finally {
       FileHelper.stopTracking();
+    }
+  }
+
+  void _autoCommit(String featureName, FileTracker tracker) {
+    if (!GitHelper.isGitInstalled() || !GitHelper.isGitRepo()) return;
+
+    final files = [...tracker.created, ...tracker.updated];
+    if (files.isEmpty) return;
+
+    final message = 'cscm: create $featureName (${files.length} files)';
+    final result = GitHelper.commit(message: message, files: files);
+    if (result != null) {
+      CliUI.success('Auto-commit: $message');
     }
   }
 }

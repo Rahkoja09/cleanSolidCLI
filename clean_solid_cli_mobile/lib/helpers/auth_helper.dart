@@ -6,27 +6,34 @@ import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:path/path.dart' as p;
 
 class AuthHelper {
-  static Future<void> generateAuthFeature({
+  static Future<List<String>> generateAuthFeature({
     required bool useEmail,
     required bool useSocial,
   }) async {
-    CliUI.header('Configuration de l\'authentification');
+    CliUI.header("Configuration de l'authentification");
+
+    final filesCreated = <String>[];
 
     for (var type in AuthFileType.values) {
       if (type == AuthFileType.socialService && !useSocial) continue;
       if (type == AuthFileType.emailService && !useEmail) continue;
 
       final targetPath = _getAuthTargetPath(type);
-      await _processFile(
+      final created = await _processFile(
         type: type,
         targetPath: targetPath,
         useEmail: useEmail,
         useSocial: useSocial,
       );
+      if (created) {
+        filesCreated.add(targetPath);
+      }
     }
+
+    return filesCreated;
   }
 
-  static Future<void> _processFile({
+  static Future<bool> _processFile({
     required AuthFileType type,
     required String targetPath,
     required bool useEmail,
@@ -40,7 +47,7 @@ class AuthHelper {
     );
     if (templateContent == null || templateContent.isEmpty) {
       CliUI.warning('template ${type.name} introuvable');
-      return;
+      return false;
     }
 
     templateContent = templateContent.replaceAll(
@@ -61,10 +68,11 @@ class AuthHelper {
         useSocial,
       );
 
-      if (finalContent.trim().isEmpty) return;
+      if (finalContent.trim().isEmpty) return false;
 
       file.writeAsStringSync(finalContent);
       CliUI.fileCreated(p.basename(targetPath));
+      return true;
     } else {
       // MODE UPDATE
       String existingContent = file.readAsStringSync();
@@ -88,7 +96,9 @@ class AuthHelper {
       if (updatedContent != existingContent) {
         file.writeAsStringSync(updatedContent);
         CliUI.fileUpdated(p.basename(targetPath));
+        return true;
       }
+      return false;
     }
   }
 

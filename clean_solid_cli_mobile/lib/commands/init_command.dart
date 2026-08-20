@@ -5,11 +5,13 @@ import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
 import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:clean_solid_cli_mobile/utils/config_reader.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
+import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
+import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
 
 class InitCommand extends Command {
   @override
   String get description =>
-      'Créer un projet Flutter complet en Clean Architecture depuis zéro';
+      'Creer un projet Flutter complet en Clean Architecture depuis zero';
 
   @override
   String get name => 'init';
@@ -24,9 +26,21 @@ class InitCommand extends Command {
     argParser.addOption(
       'backend',
       abbr: 'b',
-      help: 'Backend à configurer (supabase | firebase | none)',
+      help: 'Backend a configurer (supabase | firebase | none)',
       defaultsTo: 'supabase',
       allowed: ['supabase', 'firebase', 'none'],
+    );
+    argParser.addOption(
+      'org',
+      abbr: 'o',
+      help: 'Package bundle ID (ex: com.company)',
+      defaultsTo: 'com.example',
+    );
+    argParser.addFlag(
+      'no-git',
+      help: 'Skip git initialization',
+      defaultsTo: false,
+      negatable: false,
     );
   }
 
@@ -38,13 +52,15 @@ class InitCommand extends Command {
 
     if (projectName == null || projectName.trim().isEmpty) {
       throw const CliException(
-        'Veuillez spécifier un nom de projet.'
-        '   Usage : cscm init <nom_du_projet>'
+        'Veuillez specifier un nom de projet.\n'
+        '   Usage : cscm init <nom_du_projet>\n'
         '   Exemple : cscm init mon_app',
       );
     }
 
     final backend = argResults?['backend'] as String? ?? 'supabase';
+    final org = argResults?['org'] as String? ?? 'com.example';
+    final noGit = argResults?['no-git'] as bool? ?? false;
     final snakeName = projectName.replaceAll(' ', '_').toLowerCase();
 
     // Validation anti path traversal
@@ -52,59 +68,121 @@ class InitCommand extends Command {
         projectName.contains('/') ||
         projectName.contains('\\')) {
       throw const CliException(
-        'Le nom du projet contient des caractères interdits.',
+        'Le nom du projet contient des caracteres interdits.',
       );
     }
 
-    // Vérifier qu'on est pas dans un projet existant
+    // Validation org format
+    if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
+      throw CliException(
+        'Format d\'org invalide: "$org".\n'
+        '   Utilisez le format: com.company (ex: com.example, fr.maboite)',
+      );
+    }
+
+    // Verifier qu'on est pas dans un projet existant
     if (File('pubspec.yaml').existsSync()) {
       throw CliException(
-        'Un projet Flutter existe déjà dans ce dossier.'
+        'Un projet Flutter existe deja dans ce dossier.\n'
         '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
       );
     }
 
-    print('\n itialisation du projet [$snakeName]...\n');
+    CliUI.header('Initialisation du projet [$snakeName]');
 
-    // AVANT ConfigReader.createConfig(), ajouter :
-    final parentYaml = File('.cscm.yaml');
-    if (await parentYaml.exists()) {
-      await parentYaml.delete();
-    }
+    // ── 1. flutter create ──
+    CliUI.section('Flutter create');
 
-    // 1. Créer le .cscm.yaml
-    ConfigReader.createConfig(projectName: snakeName, backend: backend);
-
-    // 2. Générer la structure complète
-    _createProjectStructure(snakeName, backend);
-
-    print('\n Projet [$snakeName] créé avec succès !');
-    print('\nProchaines étapes :');
-    print('   1. cd $snakeName');
-    print('   2. flutter pub get');
-    print(
-      '   3. Configurer le fichier .env avec vos clés ${backend == 'supabase' ? 'Supabase' : backend}',
-    );
-    if (backend == 'supabase') {
-      print(
-        '   4. dart pub global activate --source path ../clean_solid_cli_mobile',
+    if (!GitHelper.isFlutterInstalled()) {
+      throw const CliException(
+        'Flutter n\'est pas installe ou n\'est pas dans le PATH.\n'
+        '   Installez Flutter: https://docs.flutter.dev/get-started/install',
       );
     }
-    print('   5. cscm create ma_feature -i "nom:string,prix:double"');
-  }
 
-  Future<void> _createProjectStructure(String name, String backend) async {
-    final projectName =
-        (argResults!['name'] as String?) ??
-        (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
-    final projectDir = Directory(name);
-    if (!projectDir.existsSync()) {
-      projectDir.createSync(recursive: true);
+    await CliUI.withSpinner(
+      'flutter create $snakeName --org $org',
+      () async {
+        final exitCode = GitHelper.flutterCreate(
+          projectName: snakeName,
+          org: org,
+        );
+        if (exitCode != 0) {
+          throw CliException(
+            'flutter create a echoue (exit code: $exitCode).\n'
+            '   Verifiez que Flutter est correctement installe.',
+          );
+        }
+        return null;
+      },
+    );
+
+    CliUI.success('Projet Flutter cree');
+
+    // ── 2. Overlay clean architecture ──
+    CliUI.section('Clean Architecture overlay');
+    _createProjectStructure(snakeName, backend);
+
+    // ── 3. .cscm.yaml ──
+    ConfigReader.createConfig(projectName: snakeName, backend: backend);
+    CliUI.success('.cscm.yaml cree');
+
+    // ── 4. .cscm-state.yaml ──
+    _createProjectState(snakeName, snakeName, backend);
+    CliUI.success('.cscm-state.yaml cree');
+
+    // ── 5. Git init ──
+    if (!noGit) {
+      CliUI.section('Git');
+      final projectDir = snakeName;
+
+      if (GitHelper.isGitInstalled()) {
+        if (!GitHelper.isGitRepo()) {
+          // cd into the created project, init git, then cd back
+          // We init in the project directory
+          if (GitHelper.initRepo(directory: projectDir)) {
+            CliUI.success('git init');
+
+            // Initial commit
+            final commitResult = GitHelper.commit(
+              message: 'init: cscm project $snakeName with clean architecture',
+              directory: projectDir,
+            );
+            if (commitResult != null) {
+              CliUI.success('Initial commit cree');
+            } else {
+              CliUI.warning('Initial commit echoue (peut-etre .gitignore actif)');
+            }
+          } else {
+            CliUI.warning('git init a echoue');
+          }
+        } else {
+          CliUI.info('Git repo deja present');
+        }
+      } else {
+        CliUI.warning('Git non installe, initialisation git ignoree');
+      }
     }
 
+    // ── 6. Summary ──
+    print('');
+    CliUI.success('Projet [$snakeName] cree avec succes !');
+    print('');
+    CliUI.nextSteps([
+      'cd $snakeName',
+      'flutter pub get',
+      if (backend == 'supabase' || backend == 'firebase')
+        'Configurer le fichier .env avec vos cles $backend',
+      'cscm create ma_feature -i "nom:string,prix:double"',
+    ]);
+  }
+
+  /// Overlay clean architecture files on top of the flutter create project.
+  Future<void> _createProjectStructure(String name, String backend) async {
+    final projectDir = Directory(name);
     final libDir = '${projectDir.path}/lib';
 
-    // --- STRUCTURE DES DOSSIERS ---
+    // --- DIRECTORIES ---
     final directories = [
       '$libDir/config/constants',
       '$libDir/config/theme',
@@ -128,10 +206,10 @@ class InitCommand extends Command {
 
     for (final dir in directories) {
       Directory(dir).createSync(recursive: true);
-      print('    ${dir.replaceFirst('${projectDir.path}/', '')}');
+      CliUI.dim(dir.replaceFirst('${projectDir.path}/', ''));
     }
 
-    // --- FICHIERS DE CONFIG ---
+    // --- CONFIG FILES ---
     _writeFile('$libDir/config/constants/app_const.dart', _appConst(name));
     _writeFile(
       '$libDir/config/constants/supabase_api_constants.dart',
@@ -176,30 +254,17 @@ class InitCommand extends Command {
     // --- MAIN ---
     _writeFile('$libDir/main.dart', _main(name, backend));
 
-    // --- ROOT FILES ---
-    _writeFile('${projectDir.path}/pubspec.yaml', _pubspec(name, backend));
+    // --- MERGE DEPENDENCIES INTO EXISTING pubspec.yaml ---
+    _mergePubspecDependencies(name, backend, projectDir.path);
+
+    // --- ASSETS & MISC ---
     _writeFile('${projectDir.path}/.env', _envTemplate());
-    _writeFile('${projectDir.path}/.gitignore', _gitignore());
     _writeFile('${projectDir.path}/analysis_options.yaml', _analysisOptions());
 
-    // Copier le .cscm.yaml dans le projet
-    final configFile = File('.cscm.yaml');
-    if (configFile.existsSync()) {
-      configFile.copySync('${projectDir.path}/.cscm.yaml');
-    }
+    // .gitignore already created by flutter create, append our additions
+    _appendGitignore(projectDir.path);
 
-    final snakeName = projectName!.replaceAll(' ', '_').toLowerCase();
-
-    // Creer le .cscm-state.yaml dans le projet
-    _createProjectState(projectDir.path, snakeName, backend);
-
-    // Après la copie dans le projet, nettoyer le parent
-    final parentYaml = File('.cscm.yaml');
-    if (await parentYaml.exists()) {
-      await parentYaml.delete();
-    }
-
-    // Créer un .gitkeep dans les dossiers vides
+    // .gitkeep in empty dirs
     final gitkeeps = [
       '${projectDir.path}/assets/medias/icons',
       '${projectDir.path}/assets/medias/animations',
@@ -211,14 +276,144 @@ class InitCommand extends Command {
     }
   }
 
+  /// Merge our additional dependencies into the pubspec.yaml
+  /// generated by `flutter create`, preserving its structure.
+  void _mergePubspecDependencies(
+    String name,
+    String backend,
+    String projectDir,
+  ) {
+    final pubspecFile = File('$projectDir/pubspec.yaml');
+    if (!pubspecFile.existsSync()) return;
+
+    String content = pubspecFile.readAsStringSync();
+
+    final additionalDeps = [
+      '  flutter_riverpod: ^2.0.0',
+      '  riverpod: ^2.6.1',
+      '  riverpod_annotation: ^2.6.1',
+      '  get_it: ^9.2.0',
+      '  go_router: ^16.0.0',
+      '  dartz: ^0.10.1',
+      '  equatable: ^2.0.7',
+      '  intl: ^0.19.0',
+      '  shared_preferences: ^2.2.3',
+      '  path_provider: ^2.1.5',
+      '  path: ^1.9.1',
+      '  uuid: ^4.5.1',
+      '  flutter_screenutil: ^5.9.3',
+      '  internet_connection_checker_plus: ^2.8.0',
+      '  loading_animation_widget: ^1.3.0',
+      '  toastification: ^3.0.3',
+      '  skeletonizer: ^1.4.3',
+      '  cached_network_image: ^3.4.1',
+      '  image_picker: ^1.1.2',
+      '  permission_handler: ^12.0.0+1',
+      '  share_plus: ^10.1.0',
+      if (backend == 'supabase') '  supabase_flutter: ^2.9.0',
+    ];
+
+    final additionalDevDeps = [
+      '  build_runner: ^2.4.8',
+      '  flutter_launcher_icons: ^0.14.4',
+      '  mocktail: ^1.0.4',
+    ];
+
+    // ── 1. Insert runtime deps BEFORE dev_dependencies: ──
+    final devDepsMatch = RegExp(
+      r'^(dev_dependencies:)',
+      multiLine: true,
+    ).firstMatch(content);
+
+    if (devDepsMatch != null) {
+      final depsBlock = additionalDeps.join('\n');
+      // replaceRange insère à la position exacte du regex match,
+      // PAS à la première sous-chaîne trouvée
+      content = content.replaceRange(
+        devDepsMatch.start,
+        devDepsMatch.start,
+        '$depsBlock\n\n',
+      );
+    }
+
+    // ── 2. Insert dev deps BEFORE root-level flutter: ──
+    final flutterMatch = RegExp(
+      r'^(flutter:)',
+      multiLine: true,
+    ).firstMatch(content);
+
+    if (flutterMatch != null) {
+      final devDepsBlock = additionalDevDeps.join('\n');
+      // replaceRange = position exacte du match regex (^flutter:)
+      // NON replaceFirst("flutter:", ...) qui frappe  "  flutter:" dans deps
+      content = content.replaceRange(
+        flutterMatch.start,
+        flutterMatch.start,
+        '$devDepsBlock\n\n',
+      );
+    }
+
+    // ── 3. Replace ENTIRE root flutter: section ──
+    // Regex: ^flutter:\n suivi de lignes indentées ou vides
+    final flutterSectionMatch = RegExp(
+      r'^flutter:\n(?:[ \t].*\n|\n)*',
+      multiLine: true,
+    ).firstMatch(content);
+
+    if (flutterSectionMatch != null) {
+      content = content.replaceRange(
+        flutterSectionMatch.start,
+        flutterSectionMatch.end,
+        'flutter:\n'
+      '  uses-material-design: true\n'
+      '\n'
+      '  assets:\n'
+      '    - assets/medias/icons/\n'
+      '    - assets/medias/animations/\n'
+      '    - assets/theme/\n',
+      );
+    }
+
+    pubspecFile.writeAsStringSync(content);
+    CliUI.success('pubspec.yaml mis a jour');
+  }
+
+  /// Append CSCM-specific entries to the .gitignore created by flutter create.
+  void _appendGitignore(String projectDir) {
+    final gitignore = File('$projectDir/.gitignore');
+    if (!gitignore.existsSync()) return;
+
+    final content = gitignore.readAsStringSync();
+    if (content.contains('.env')) return; // Already added
+
+    gitignore.writeAsStringSync(
+      '$content'
+      '\n'
+      '# CSCM\n'
+      '.env\n'
+      '.cscm-features.yaml\n',
+    );
+  }
+
   void _writeFile(String path, String content) {
     final file = File(path);
     file.writeAsStringSync(content);
-    print('    ${path.split('/').last}');
+    CliUI.fileCreated(path.split('/').last);
   }
 
-  void _createProjectState(String projectPath, String name, String backend) {
-    final statePath = '$projectPath/${ProjectState.stateFileName}';
+  void _createProjectState(
+    String projectPath,
+    String name,
+    String backend,
+  ) {
+    final stateFile = File('$projectPath/${ProjectState.stateFileName}');
+    if (stateFile.existsSync()) {
+      stateFile.deleteSync();
+    }
+
+    // Use ProjectState.create which writes the file properly
+    // But we need to temporarily cd or pass path
+    // Instead, write directly
     final comment =
         '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
         '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
@@ -240,7 +435,7 @@ actions:
     args:
       - $name
 ''';
-    File(statePath).writeAsStringSync(comment + yaml);
+    stateFile.writeAsStringSync(comment + yaml);
   }
 
   // ═══════════════════════════════════════════════════
@@ -256,7 +451,7 @@ class AppConst {
 
   String _supabaseConstants() => '''
 class SupabaseApiConstants {
-  //  Renseignez vos clés dans le fichier .env
+  //  Renseignez vos cles dans le fichier .env
   static const String apiUrl = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: '',
@@ -283,8 +478,8 @@ final themeProvider = StateProvider<ThemeData>((ref) {
 
   String _appAction() => '''
 /// Interface de base pour toutes les actions de l'application.
-/// Chaque action porte un message de succès, d'erreur,
-/// et indique s'il s'agit d'une action d'écriture.
+/// Chaque action porte un message de succes, d'erreur,
+/// et indique s'il s'agit d'une action d'ecriture.
 abstract class AppAction {
   String get successMessage;
   String get errorMessage;
@@ -309,14 +504,14 @@ Future<void> init() async {
 ''';
 
   String _exceptions() => '''
-/// Exceptions serveur (API, base de données)
+/// Exceptions serveur (API, base de donnees)
 class ServerException implements Exception {
   final String message;
   final String? code;
   const ServerException({required this.message, this.code});
 }
 
-/// Erreur spécifique à l'API REST
+/// Erreur specifique a l'API REST
 class ApiException implements Exception {
   final String message;
   final String? code;
@@ -330,7 +525,7 @@ class AuthUserException implements Exception {
   const AuthUserException({required this.message, this.code});
 }
 
-/// Erreur réseau (pas de connexion)
+/// Erreur reseau (pas de connexion)
 class NetworkException implements Exception {
   final String message;
   const NetworkException({required this.message});
@@ -396,34 +591,34 @@ class UnexpectedFailure extends Failure {
   String _errorManager() => '''
 import '../error/failures.dart';
 
-/// Mappe les failures en messages compréhensibles par l'utilisateur.
+/// Mappe les failures en messages comprehensibles par l'utilisateur.
 class SuccessErrorManager {
   static String getFriendlyErrorMessage(Failure failure, dynamic action) {
-    // Messages spécifiques par code d'erreur
+    // Messages specifiques par code d'erreur
     switch (failure.code) {
       case '23505':
-        return 'Cet élément existe déjà.';
+        return 'Cet element existe deja.';
       case '23503':
-        return 'Impossible de supprimer : référencé par un autre élément.';
+        return 'Impossible de supprimer : reference par un autre element.';
       case 'PGRST116':
-        return 'Aucune donnée trouvée.';
+        return 'Aucune donnee trouvee.';
       case '42P01':
         return 'Ressource introuvable.';
       case 'Network_01':
         return 'Pas de connexion Internet.';
     }
 
-    // Message personnalisé de l'action si disponible
+    // Message personnalise de l'action si disponible
     if (action != null && action.errorMessage != null) {
       return action.errorMessage as String;
     }
 
-    // Messages génériques par type de failure
+    // Messages generiques par type de failure
     if (failure is NetworkFailure) {
-      return 'Vérifiez votre connexion Internet.';
+      return 'Verifiez votre connexion Internet.';
     }
     if (failure is AuthFailure) {
-      return 'Erreur d\'authentification. Veuillez vous reconnecter.';
+      return "Erreur d'authentification. Veuillez vous reconnecter.";
     }
 
     return failure.message.isNotEmpty ? failure.message : 'Une erreur est survenue.';
@@ -468,7 +663,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(
-        child: Text('Page non trouvée : \${state.uri.path}'),
+        child: Text('Page non trouvee : \${state.uri.path}'),
       ),
     ),
   );
@@ -674,121 +869,14 @@ class MyApp extends ConsumerWidget {
 ''';
   }
 
-  String _pubspec(String name, String backend) {
-    final deps = [
-      '  flutter:',
-      '    sdk: flutter',
-      '  cupertino_icons: ^1.0.8',
-      '  flutter_riverpod: ^2.0.0',
-      '  riverpod: ^2.6.1',
-      '  riverpod_annotation: ^2.6.1',
-      '  get_it: ^9.2.0',
-      '  go_router: ^16.0.0',
-      '  dartz: ^0.10.1',
-      '  equatable: ^2.0.7',
-      '  intl: ^0.19.0',
-      '  shared_preferences: ^2.2.3',
-      '  path_provider: ^2.1.5',
-      '  path: ^1.9.1',
-      '  uuid: ^4.5.1',
-      '  flutter_screenutil: ^5.9.3',
-      '  internet_connection_checker_plus: ^2.8.0',
-      '  loading_animation_widget: ^1.3.0',
-      '  toastification: ^3.0.3',
-      '  skeletonizer: ^1.4.3',
-      '  cached_network_image: ^3.4.1',
-      '  image_picker: ^1.1.2',
-      '  permission_handler: ^12.0.0+1',
-      '  share_plus: ^10.1.0',
-    ];
-
-    if (backend == 'supabase') {
-      deps.addAll(['  supabase_flutter: ^2.9.0']);
-    }
-
-    return '''
-name: $name
-description: "A new Flutter project."
-publish_to: "none"
-version: 1.0.0+1
-
-environment:
-  sdk: ^3.7.0
-
-dependencies:
-${deps.join('\n')}
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  build_runner: ^2.4.8
-  flutter_launcher_icons: ^0.14.4
-  mocktail: ^1.0.4
-
-flutter:
-  uses-material-design: true
-  assets:
-    - assets/medias/icons/
-    - assets/medias/animations/
-    - assets/theme/
-''';
-  }
-
   String _envTemplate() => '''
 # ═══════════════════════════════════════
 # Variables d'environnement
-# ====== :( Ne jamais commiter ce fichier avec de vraies clés !
+# ====== :( Ne jamais commiter ce fichier avec de vraies cles !
 # ═══════════════════════════════════════
 
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
-''';
-
-  String _gitignore() => '''
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.buildlog/
-.history
-.svn/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# VS Code related
-.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Environment
-.env
 ''';
 
   String _analysisOptions() => '''
