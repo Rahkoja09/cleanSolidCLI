@@ -100,22 +100,19 @@ class InitCommand extends Command {
       );
     }
 
-    await CliUI.withSpinner(
-      'flutter create $snakeName --org $org',
-      () async {
-        final exitCode = GitHelper.flutterCreate(
-          projectName: snakeName,
-          org: org,
+    await CliUI.withSpinner('flutter create $snakeName --org $org', () async {
+      final exitCode = GitHelper.flutterCreate(
+        projectName: snakeName,
+        org: org,
+      );
+      if (exitCode != 0) {
+        throw CliException(
+          'flutter create a echoue (exit code: $exitCode).\n'
+          '   Verifiez que Flutter est correctement installe.',
         );
-        if (exitCode != 0) {
-          throw CliException(
-            'flutter create a echoue (exit code: $exitCode).\n'
-            '   Verifiez que Flutter est correctement installe.',
-          );
-        }
-        return null;
-      },
-    );
+      }
+      return null;
+    });
 
     CliUI.success('Projet Flutter cree');
 
@@ -151,7 +148,9 @@ class InitCommand extends Command {
             if (commitResult != null) {
               CliUI.success('Initial commit cree');
             } else {
-              CliUI.warning('Initial commit echoue (peut-etre .gitignore actif)');
+              CliUI.warning(
+                'Initial commit echoue (peut-etre .gitignore actif)',
+              );
             }
           } else {
             CliUI.warning('git init a echoue');
@@ -365,12 +364,12 @@ class InitCommand extends Command {
         flutterSectionMatch.start,
         flutterSectionMatch.end,
         'flutter:\n'
-      '  uses-material-design: true\n'
-      '\n'
-      '  assets:\n'
-      '    - assets/medias/icons/\n'
-      '    - assets/medias/animations/\n'
-      '    - assets/theme/\n',
+        '  uses-material-design: true\n'
+        '\n'
+        '  assets:\n'
+        '    - assets/medias/icons/\n'
+        '    - assets/medias/animations/\n'
+        '    - assets/theme/\n',
       );
     }
 
@@ -401,11 +400,7 @@ class InitCommand extends Command {
     CliUI.fileCreated(path.split('/').last);
   }
 
-  void _createProjectState(
-    String projectPath,
-    String name,
-    String backend,
-  ) {
+  void _createProjectState(String projectPath, String name, String backend) {
     final stateFile = File('$projectPath/${ProjectState.stateFileName}');
     if (stateFile.existsSync()) {
       stateFile.deleteSync();

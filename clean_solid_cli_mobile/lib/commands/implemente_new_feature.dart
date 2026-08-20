@@ -68,7 +68,7 @@ class ImplementeNewFeature extends Command {
 
     try {
       final projectName = GetProjetItem.getProjectName();
-      final snakeName = ReformateClassName.formatToSnakeCase(featureName);
+      ReformateClassName.formatToSnakeCase(featureName);
 
       // Track the files that will be updated
       final tracker = FileTracker();
@@ -96,9 +96,7 @@ class ImplementeNewFeature extends Command {
       CliUI.success('Implementation terminee avec succes');
 
       // Auto commit
-      if (autoCommit &&
-          GitHelper.isGitInstalled() &&
-          GitHelper.isGitRepo()) {
+      if (autoCommit && GitHelper.isGitInstalled() && GitHelper.isGitRepo()) {
         final result = GitHelper.commit(
           message: 'cscm: implemente $featureName',
         );

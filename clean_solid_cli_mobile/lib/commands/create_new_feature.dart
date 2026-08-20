@@ -1,5 +1,4 @@
 import 'package:args/command_runner.dart';
-import 'package:clean_solid_cli_mobile/models/field.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/enums.dart';
 import 'package:clean_solid_cli_mobile/helpers/error_listener_helper.dart';
