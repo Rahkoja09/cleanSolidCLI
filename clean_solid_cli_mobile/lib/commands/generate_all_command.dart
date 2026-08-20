@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:io';
 import 'package:args/command_runner.dart';
+import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:yaml/yaml.dart';
 import 'package:clean_solid_cli_mobile/helpers/error_listener_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/file_helper.dart';
@@ -88,17 +89,16 @@ class GenerateAllCommand extends Command {
     print(' Toutes les features ont été générées avec succès !');
   }
 
-  void _generateFeature(
-    _FeatureDef feature,
-    
-    String projectName,
-  ) {
+  void _generateFeature(_FeatureDef feature, String projectName) {
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(feature.name);
     final capitalizedName = ReformateClassName.capitalizeClassName(
       featureName: snakeFeatureName,
     );
 
-    print(' ${capitalizedName}...');
+    print('  ${capitalizedName}...');
+
+    // ── Activer le tracker pour cette feature ──
+    activeTracker = FileTracker();
 
     // Générer les templates (entity, model, remote source, etc.)
     for (var type in FileTemplateType.values) {
@@ -115,6 +115,8 @@ class GenerateAllCommand extends Command {
           templateName: type.name,
           targetPath: targetPath,
         );
+
+        activeTracker!.trackCreated(targetPath);
       } catch (_) {
         // Fichier existe déjà ou autre erreur — on continue
       }
@@ -128,19 +130,43 @@ class GenerateAllCommand extends Command {
           fieldsRaw: feature.fieldsRaw,
           projectName: projectName,
         );
-        print('  Champs injectés.');
+        print('    Champs injectes.');
       } catch (e) {
-        print(" Erreur d'implémentation : $e");
+        print("    Erreur d'implementation : $e");
       }
     }
 
     // Mettre à jour l'injection de dépendances
     InjectionHelper.updateInjectionContainer(feature.name, capitalizedName);
+    activeTracker!.trackUpdated('lib/core/di/injection_container.dart');
 
     // Mettre à jour le ErrorListener
     ErrorListenerHelper.updateErrorListener(capitalizedName, snakeFeatureName);
+    activeTracker!.trackUpdated(
+      'lib/core/mainErrorListener/success_error_listener.dart',
+    );
 
-    print(' ${capitalizedName} terminé.\n');
+    // ── Sauvegarder dans le state ──
+    final fields =
+        feature.fieldsRaw.isNotEmpty
+            ? FieldParser.parse(feature.fieldsRaw)
+            : <dynamic>[];
+
+    ProjectState.addFeature(
+      rawName: feature.name,
+      snakeName: snakeFeatureName,
+      pascalName: capitalizedName,
+      fields: activeTracker!.fieldsToRecords(fields),
+      filesCreated: activeTracker!.created,
+      filesUpdated: activeTracker!.updated,
+      sqlMigration: activeTracker!.lastSqlMigration,
+    );
+
+    // ── Réinitialiser le tracker ──
+    activeTracker!.reset();
+
+    print('    ${capitalizedName} termine (state enregistre).');
+    print('');
   }
 
   // ═══════════════════════════════════════════════════
