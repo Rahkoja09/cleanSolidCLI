@@ -303,10 +303,6 @@ class InitCommand extends Command {
     final pubspecFile = File('$projectDir/pubspec.yaml');
     if (!pubspecFile.existsSync()) return;
 
-    String content = pubspecFile.readAsStringSync();
-
-    // The flutter create pubspec has a "dependencies:" section.
-    // We need to add our packages after it.
     final additionalDeps = [
       '  flutter_riverpod: ^2.0.0',
       '  riverpod: ^2.6.1',
@@ -338,73 +334,108 @@ class InitCommand extends Command {
       '  mocktail: ^1.0.4',
     ];
 
-    // Add deps after existing dependency section
-    // Find the "dependencies:" line and add after cupertino_icons
-    final depsBlock = additionalDeps.join('\n');
-    if (content.contains('dependencies:')) {
-      // Insert after the last entry in the dependencies section
-      // We look for the "dev_dependencies:" or "flutter:" section as end marker
-      final devDepsMatch = RegExp(
-        r'^(dev_dependencies:)',
-        multiLine: true,
-      ).firstMatch(content);
+    final lines = pubspecFile.readAsLinesSync();
+    final result = <String>[];
 
-      if (devDepsMatch != null) {
-        content = content.replaceFirst(
-          devDepsMatch.group(0)!,
-          '$depsBlock\n\n${devDepsMatch.group(0)!}',
-        );
-      } else {
-        // Append at end
-        content = '$content\n$depsBlock\n';
-      }
-    }
+    // Track which top-level section we're in.
+    // A line is a "top-level section header" if it matches ^[a-z_]+:$
+    // and is at indent 0 (no leading spaces).
+    // We insert our deps/dev_deps right before the next top-level header.
+    int? depsInsertIndex; // line index where we should insert deps (before this line)
+    int? devDepsInsertIndex;
+    int? flutterSectionIndex; // line index of the top-level "flutter:" section
+    bool flutterAssetsAdded = false;
+    bool usesMaterialDesignExists = false;
 
-    // Add dev deps
-    final devDepsBlock = additionalDevDeps.join('\n');
-    if (content.contains('dev_dependencies:')) {
-      final flutterMatch = RegExp(
-        r'^(flutter:)',
-        multiLine: true,
-      ).firstMatch(content);
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final trimmed = line.trim();
 
-      if (flutterMatch != null) {
-        content = content.replaceFirst(
-          flutterMatch.group(0)!,
-          '$devDepsBlock\n\n${flutterMatch.group(0)!}',
-        );
-      } else {
-        content = '$content\n$devDepsBlock\n';
-      }
-    }
+      // Detect top-level section headers (no indent, ends with :)
+      final isTopLevelHeader =
+          line.isNotEmpty &&
+          !line.startsWith(' ') &&
+          !line.startsWith('\t') &&
+          RegExp(r'^[a-z_]+:$').hasMatch(trimmed);
 
-    // Add assets to flutter section
-    if (content.contains('flutter:') && !content.contains('assets/medias/icons/')) {
-      content = content.replaceFirst(
-        'flutter:\n',
-        'flutter:\n'
-            '  uses-material-design: true\n'
-            '  assets:\n'
-            '    - assets/medias/icons/\n'
-            '    - assets/medias/animations/\n'
-            '    - assets/theme/\n',
-      );
-      // Remove duplicate uses-material-design if any
-      final lines = content.split('\n');
-      final seen = <String>{};
-      final filtered = <String>[];
-      for (final line in lines) {
-        final trimmed = line.trim();
-        if (trimmed == 'uses-material-design: true') {
-          if (seen.contains(trimmed)) continue;
-          seen.add(trimmed);
+      if (isTopLevelHeader) {
+        switch (trimmed) {
+          case 'dependencies:':
+            // Insert our deps right before dev_dependencies (we'll find it later)
+            // For now just mark that we're past dependencies header
+            break;
+          case 'dev_dependencies:':
+            // Insert our regular deps right before this line
+            depsInsertIndex ??= i;
+          case 'flutter:':
+            // Insert our dev_deps right before this line (if not done yet)
+            devDepsInsertIndex ??= i;
+            // Record the top-level flutter section index
+            flutterSectionIndex ??= i;
         }
-        filtered.add(line);
       }
-      content = filtered.join('\n');
     }
 
-    pubspecFile.writeAsStringSync(content);
+    // Check if uses-material-design already exists in the flutter section
+    if (flutterSectionIndex != null) {
+      for (int i = flutterSectionIndex! + 1; i < lines.length; i++) {
+        final line = lines[i];
+        // Stop at next top-level header
+        if (line.isNotEmpty &&
+            !line.startsWith(' ') &&
+            !line.startsWith('\t') &&
+            RegExp(r'^[a-z_]+:$').hasMatch(line.trim())) {
+          break;
+        }
+        if (line.trim() == 'uses-material-design: true') {
+          usesMaterialDesignExists = true;
+        }
+        if (line.contains('assets/medias/icons/')) {
+          flutterAssetsAdded = true;
+        }
+      }
+    }
+
+    // Build the final output line by line
+    for (int i = 0; i < lines.length; i++) {
+      // Insert regular deps before dev_dependencies
+      if (i == depsInsertIndex) {
+        result.add(additionalDeps.join('\n'));
+        result.add(''); // blank line
+      }
+
+      // Insert dev deps before flutter:
+      if (i == devDepsInsertIndex) {
+        result.add(additionalDevDeps.join('\n'));
+        result.add(''); // blank line
+      }
+
+      result.add(lines[i]);
+
+      // Add assets after uses-material-design in the flutter section
+      if (i == flutterSectionIndex && !flutterAssetsAdded) {
+        if (!usesMaterialDesignExists) {
+          result.add('  uses-material-design: true');
+        }
+        result.add('  assets:');
+        result.add('    - assets/medias/icons/');
+        result.add('    - assets/medias/animations/');
+        result.add('    - assets/theme/');
+        flutterAssetsAdded = true;
+      }
+    }
+
+    // Fallback: if depsInsertIndex is still null, append at end
+    if (depsInsertIndex == null) {
+      result.add('');
+      result.add(additionalDeps.join('\n'));
+    }
+    if (devDepsInsertIndex == null) {
+      result.add('');
+      result.add(additionalDevDeps.join('\n'));
+    }
+
+    pubspecFile.writeAsStringSync(result.join('\n'));
     CliUI.success('pubspec.yaml mis a jour');
   }
 
