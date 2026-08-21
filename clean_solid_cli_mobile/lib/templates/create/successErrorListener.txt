@@ -30,7 +30,7 @@ class SuccessErrorListener extends ConsumerWidget {
           Snackbar.show(context, message: msg, isError: true, isPersistent: true);
         }
       } else {
-        final String msg = action?.errorMessage ?? failure.message;
+        final String msg = (action?.errorMessage ?? failure.message).toString();
         showToast(context, description: msg, isError: true, title: title);
       }
     }
