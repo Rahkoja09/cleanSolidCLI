@@ -6,13 +6,14 @@ import 'package:clean_solid_cli_mobile/utils/template_resolver.dart';
 import 'package:path/path.dart' as p;
 
 class TestGenerator {
-  static Future<void> generate({
+  static Future<int> generate({
     required String featureName,
     required String projectName,
   }) async {
     final snakeName = ReformateClassName.formatToSnakeCase(featureName);
+    var generated = 0;
 
-    await _writeTestFromTemplate(
+    generated += await _writeTestFromTemplate(
       templateName: 'repository_test',
       targetDir: p.join('test', 'features', snakeName, 'data', 'repository'),
       fileName: '${snakeName}_repository_impl_test.dart',
@@ -20,7 +21,7 @@ class TestGenerator {
       snakeName: snakeName,
     );
 
-    await _writeTestFromTemplate(
+    generated += await _writeTestFromTemplate(
       templateName: 'controller_test',
       targetDir: p.join(
         'test',
@@ -34,10 +35,15 @@ class TestGenerator {
       snakeName: snakeName,
     );
 
-    CliUI.info('Tests unitaires generes : repository + controller');
+    if (generated > 0) {
+      CliUI.info('Tests unitaires generes : $generated fichier(s)');
+    } else {
+      CliUI.warning('Aucun test genere (templates introuvables ou deja existants)');
+    }
+    return generated;
   }
 
-  static Future<void> _writeTestFromTemplate({
+  static Future<int> _writeTestFromTemplate({
     required String templateName,
     required String targetDir,
     required String fileName,
@@ -48,8 +54,8 @@ class TestGenerator {
     final resolvedPath = await TemplateResolver.resolve(templatePath);
 
     if (resolvedPath == null) {
-      CliUI.warning('template $templateName introuvable');
-      return;
+      CliUI.warning('Template $templateName introuvable.');
+      return 0;
     }
 
     String content = File(resolvedPath).readAsStringSync();
@@ -65,12 +71,13 @@ class TestGenerator {
 
     if (file.existsSync()) {
       CliUI.fileSkipped(fileName);
-      return;
+      return 0;
     }
 
     Directory(targetDir).createSync(recursive: true);
     file.writeAsStringSync(content);
     CliUI.fileCreated(fileName);
     activeTracker?.trackCreated(targetPath);
+    return 1;
   }
 }

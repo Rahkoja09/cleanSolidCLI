@@ -7,11 +7,12 @@ import 'package:clean_solid_cli_mobile/utils/config_reader.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
+import 'package:path/path.dart' as p;
 
 class InitCommand extends Command {
   @override
   String get description =>
-  'Creer un projet Flutter complet en Clean Architecture depuis zero';
+      'Creer un projet Flutter complet en Clean Architecture depuis zero';
 
   @override
   String get name => 'init';
@@ -28,7 +29,7 @@ class InitCommand extends Command {
       abbr: 'b',
       help: 'Backend a configurer (supabase | firebase | none)',
       defaultsTo: 'supabase',
-        allowed: ['supabase', 'firebase', 'none'],
+      allowed: ['supabase', 'firebase', 'none'],
     );
     argParser.addOption(
       'org',
@@ -40,21 +41,21 @@ class InitCommand extends Command {
       'no-git',
       help: 'Skip git initialization',
       defaultsTo: false,
-        negatable: false,
+      negatable: false,
     );
   }
 
   @override
   Future<void> run() async {
     final projectName =
-    (argResults!['name'] as String?) ??
-    (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
+        (argResults!['name'] as String?) ??
+        (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
 
     if (projectName == null || projectName.trim().isEmpty) {
       throw const CliException(
         'Veuillez specifier un nom de projet.\n'
-      '   Usage : cscm init <nom_du_projet>\n'
-      '   Exemple : cscm init mon_app',
+        '   Usage : cscm init <nom_du_projet>\n'
+        '   Exemple : cscm init mon_app',
       );
     }
 
@@ -65,116 +66,115 @@ class InitCommand extends Command {
 
     // Validation anti path traversal
     if (projectName.contains('..') ||
-      projectName.contains('/') ||
-      projectName.contains('\\')) {
+        projectName.contains('/') ||
+        projectName.contains('\\')) {
       throw const CliException(
         'Le nom du projet contient des caracteres interdits.',
       );
-      }
+    }
 
-      // Validation org format
-      if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
-        throw CliException(
-          'Format d\'org invalide: "$org".\n'
+    // Validation org format
+    if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
+      throw CliException(
+        'Format d\'org invalide: "$org".\n'
         '   Utilisez le format: com.company (ex: com.example, fr.maboite)',
-        );
-      }
-
-      // Verifier qu'on est pas dans un projet existant
-      if (File('pubspec.yaml').existsSync()) {
-        throw CliException(
-          'Un projet Flutter existe deja dans ce dossier.\n'
-        '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
-        );
-      }
-
-      CliUI.header('Initialisation du projet [$snakeName]');
-
-      // ── 1. flutter create ──
-      CliUI.section('Flutter create');
-
-      if (!GitHelper.isFlutterInstalled()) {
-        throw const CliException(
-          'Flutter n\'est pas installe ou n\'est pas dans le PATH.\n'
-        '   Installez Flutter: https://docs.flutter.dev/get-started/install',
-        );
-      }
-
-      await CliUI.withSpinner(
-        'flutter create $snakeName --org $org',
-        () async {
-          final exitCode = GitHelper.flutterCreate(
-            projectName: snakeName,
-            org: org,
-          );
-          if (exitCode != 0) {
-            throw CliException(
-              'flutter create a echoue (exit code: $exitCode).\n'
-            '   Verifiez que Flutter est correctement installe.',
-            );
-          }
-          return null;
-        },
       );
+    }
 
-      CliUI.success('Projet Flutter cree');
+    // Verifier qu'on est pas dans un projet existant
+    if (File('pubspec.yaml').existsSync()) {
+      throw CliException(
+        'Un projet Flutter existe deja dans ce dossier.\n'
+        '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
+      );
+    }
 
-      // ── 2. Overlay clean architecture ──
-      CliUI.section('Clean Architecture overlay');
-      _createProjectStructure(snakeName, backend);
+    CliUI.header('Initialisation du projet [$snakeName]');
 
-      // ── 3. .cscm.yaml ──
-      ConfigReader.createConfig(projectName: snakeName, backend: backend);
-      CliUI.success('.cscm.yaml cree');
+    // ── 1. flutter create ──
+    CliUI.section('Flutter create');
 
-      // ── 4. .cscm-state.yaml ──
-      _createProjectState(snakeName, snakeName, backend);
-      CliUI.success('.cscm-state.yaml cree');
+    if (!GitHelper.isFlutterInstalled()) {
+      throw const CliException(
+        'Flutter n\'est pas installe ou n\'est pas dans le PATH.\n'
+        '   Installez Flutter: https://docs.flutter.dev/get-started/install',
+      );
+    }
 
-      // ── 5. Git init ──
-      if (!noGit) {
-        CliUI.section('Git');
-        final projectDir = snakeName;
+    await CliUI.withSpinner('flutter create $snakeName --org $org', () async {
+      final exitCode = GitHelper.flutterCreate(
+        projectName: snakeName,
+        org: org,
+      );
+      if (exitCode != 0) {
+        throw CliException(
+          'flutter create a echoue (exit code: $exitCode).\n'
+          '   Verifiez que Flutter est correctement installe.',
+        );
+      }
+      return null;
+    });
 
-        if (GitHelper.isGitInstalled()) {
-          if (!GitHelper.isGitRepo()) {
-            // cd into the created project, init git, then cd back
-            // We init in the project directory
-            if (GitHelper.initRepo(directory: projectDir)) {
-              CliUI.success('git init');
+    CliUI.success('Projet Flutter cree');
 
-              // Initial commit
-              final commitResult = GitHelper.commit(
-                message: 'init: cscm project $snakeName with clean architecture',
-                directory: projectDir,
-              );
-              if (commitResult != null) {
-                CliUI.success('Initial commit cree');
-              } else {
-                CliUI.warning('Initial commit echoue (peut-etre .gitignore actif)');
-              }
+    // ── 2. Overlay clean architecture ──
+    CliUI.section('Clean Architecture overlay');
+    _createProjectStructure(snakeName, backend);
+
+    // ── 3. .cscm.yaml ──
+    ConfigReader.createConfig(projectName: snakeName, backend: backend);
+    CliUI.success('.cscm.yaml cree');
+
+    // ── 4. .cscm-state.yaml ──
+    _createProjectState(snakeName, snakeName, backend);
+    CliUI.success('.cscm-state.yaml cree');
+
+    // ── 5. Git init ──
+    if (!noGit) {
+      CliUI.section('Git');
+      final projectDir = snakeName;
+
+      if (GitHelper.isGitInstalled()) {
+        if (!GitHelper.isGitRepo()) {
+          // cd into the created project, init git, then cd back
+          // We init in the project directory
+          if (GitHelper.initRepo(directory: projectDir)) {
+            CliUI.success('git init');
+
+            // Initial commit
+            final commitResult = GitHelper.commit(
+              message: 'init: cscm project $snakeName with clean architecture',
+              directory: projectDir,
+            );
+            if (commitResult != null) {
+              CliUI.success('Initial commit cree');
             } else {
-              CliUI.warning('git init a echoue');
+              CliUI.warning(
+                'Initial commit echoue (peut-etre .gitignore actif)',
+              );
             }
           } else {
-            CliUI.info('Git repo deja present');
+            CliUI.warning('git init a echoue');
           }
         } else {
-          CliUI.warning('Git non installe, initialisation git ignoree');
+          CliUI.info('Git repo deja present');
         }
+      } else {
+        CliUI.warning('Git non installe, initialisation git ignoree');
       }
+    }
 
-      // ── 6. Summary ──
-      print('');
-      CliUI.success('Projet [$snakeName] cree avec succes !');
-      print('');
-      CliUI.nextSteps([
-        'cd $snakeName',
-        'flutter pub get',
-        if (backend == 'supabase' || backend == 'firebase')
-          'Configurer le fichier .env avec vos cles $backend',
-          'cscm create ma_feature -i "nom:string,prix:double"',
-      ]);
+    // ── 6. Summary ──
+    print('');
+    CliUI.success('Projet [$snakeName] cree avec succes !');
+    print('');
+    CliUI.nextSteps([
+      'cd $snakeName',
+      'flutter pub get',
+      if (backend == 'supabase' || backend == 'firebase')
+        'Configurer le fichier .env avec vos cles $backend',
+      'cscm create ma_feature -i "nom:string,prix:double"',
+    ]);
   }
 
   /// Overlay clean architecture files on top of the flutter create project.
@@ -216,14 +216,8 @@ class InitCommand extends Command {
       '$libDir/config/constants/supabase_api_constants.dart',
       _supabaseConstants(),
     );
-    _writeFile(
-      '$libDir/config/theme/theme_const.dart',
-      _themeConst(name),
-    );
-    _writeFile(
-      '$libDir/config/theme/text_styles.dart',
-      _textStyles(name),
-    );
+    _writeFile('$libDir/config/theme/theme_const.dart', _themeConst(name));
+    _writeFile('$libDir/config/theme/text_styles.dart', _textStyles(name));
     _writeFile(
       '$libDir/config/theme/theme_provider.dart',
       _themeProvider(name),
@@ -235,10 +229,7 @@ class InitCommand extends Command {
       '$libDir/core/di/injection_container.dart',
       _injectionContainer(name),
     );
-    _writeFile(
-      '$libDir/core/services/storage_service.dart',
-      _storageService(),
-    );
+    _writeFile('$libDir/core/services/storage_service.dart', _storageService());
     _writeFile('$libDir/core/error/exceptions.dart', _exceptions());
     _writeFile('$libDir/core/error/failures.dart', _failures());
     _writeFile('$libDir/core/error/error_manager.dart', _errorManager());
@@ -341,7 +332,8 @@ class InitCommand extends Command {
     // A line is a "top-level section header" if it matches ^[a-z_]+:$
     // and is at indent 0 (no leading spaces).
     // We insert our deps/dev_deps right before the next top-level header.
-    int? depsInsertIndex; // line index where we should insert deps (before this line)
+    int?
+    depsInsertIndex; // line index where we should insert deps (before this line)
     int? devDepsInsertIndex;
     int? flutterSectionIndex; // line index of the top-level "flutter:" section
     bool flutterAssetsAdded = false;
@@ -353,10 +345,10 @@ class InitCommand extends Command {
 
       // Detect top-level section headers (no indent, ends with :)
       final isTopLevelHeader =
-      line.isNotEmpty &&
-      !line.startsWith(' ') &&
-      !line.startsWith('\t') &&
-      RegExp(r'^[a-z_]+:$').hasMatch(trimmed);
+          line.isNotEmpty &&
+          !line.startsWith(' ') &&
+          !line.startsWith('\t') &&
+          RegExp(r'^[a-z_]+:$').hasMatch(trimmed);
 
       if (isTopLevelHeader) {
         switch (trimmed) {
@@ -382,17 +374,17 @@ class InitCommand extends Command {
         final line = lines[i];
         // Stop at next top-level header
         if (line.isNotEmpty &&
-          !line.startsWith(' ') &&
-          !line.startsWith('\t') &&
-          RegExp(r'^[a-z_]+:$').hasMatch(line.trim())) {
+            !line.startsWith(' ') &&
+            !line.startsWith('\t') &&
+            RegExp(r'^[a-z_]+:$').hasMatch(line.trim())) {
           break;
-          }
-          if (line.trim() == 'uses-material-design: true') {
-            usesMaterialDesignExists = true;
-          }
-          if (line.contains('assets/medias/icons/')) {
-            flutterAssetsAdded = true;
-          }
+        }
+        if (line.trim() == 'uses-material-design: true') {
+          usesMaterialDesignExists = true;
+        }
+        if (line.contains('assets/medias/icons/')) {
+          flutterAssetsAdded = true;
+        }
       }
     }
 
@@ -449,10 +441,10 @@ class InitCommand extends Command {
 
     gitignore.writeAsStringSync(
       '$content'
-    '\n'
-    '# CSCM\n'
-    '.env\n'
-    '.cscm-features.yaml\n',
+      '\n'
+      '# CSCM\n'
+      '.env\n'
+      '.cscm-features.yaml\n',
     );
   }
 
@@ -467,25 +459,32 @@ class InitCommand extends Command {
 
   /// Resolve the path to a bundled asset inside the cscm package.
   String? _resolveAssetPath(String relativePath) {
-    // Try to find the asset relative to the running cscm script
-    final candidates = [
-      'lib/$relativePath',
-      '../lib/$relativePath',
-    ];
-    for (final c in candidates) {
+    // 1. Platform.script (dart run bin/main.dart)
+    try {
+      final scriptPath = Platform.script.toFilePath();
+      final binDir = Directory(scriptPath).parent;
+      final repoRoot = binDir.parent;
+      final candidate = p.join(repoRoot.path, 'lib', relativePath);
+      if (File(candidate).existsSync()) return candidate;
+    } catch (_) {}
+
+    // 2. CWD relative
+    for (final c in ['lib/$relativePath', '../lib/$relativePath']) {
       if (File(c).existsSync()) return c;
     }
-    // When installed globally, look in pub cache
+
+    // 3. Global pub cache
     final home = Platform.environment['HOME'];
     if (home != null) {
-      final globalPaths = [
-        '$home/.dart_tool/pub/global_packages/clean_solid_cli_mobile/lib/$relativePath',
-        '$home/.pub-cache/global_packages/clean_solid_cli_mobile/lib/$relativePath',
-      ];
-      for (final p in globalPaths) {
-        if (File(p).existsSync()) return p;
+      for (final prefix in [
+        '$home/.dart_tool/pub/global_packages/clean_solid_cli_mobile',
+        '$home/.pub-cache/global_packages/clean_solid_cli_mobile',
+      ]) {
+        final candidate = '$prefix/lib/$relativePath';
+        if (File(candidate).existsSync()) return candidate;
       }
     }
+
     CliUI.warning('Asset non trouve: $relativePath');
     return null;
   }
@@ -496,41 +495,35 @@ class InitCommand extends Command {
     CliUI.fileCreated(path.split('/').last);
   }
 
-  void _createProjectState(
-    String projectPath,
-    String name,
-    String backend,
-  ) {
+  void _createProjectState(String projectPath, String name, String backend) {
     final stateFile = File('$projectPath/${ProjectState.stateFileName}');
     if (stateFile.existsSync()) {
       stateFile.deleteSync();
     }
 
-    // Use ProjectState.create which writes the file properly
-    // But we need to temporarily cd or pass path
-    // Instead, write directly
-    final comment =
-    '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
-    '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
     final now = DateTime.now().toUtc().toIso8601String();
-    final yaml = '''version: 1
-    project_name: $name
-    created_at: "$now"
-    backend: $backend
-    features: []
-    auth:
-    configured: false
-    configured_at: ""
-    email: false
-    social: false
-    files_created: []
-    actions:
-    - timestamp: "$now"
+    final yaml =
+        '''# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main
+# Ce fichier suit l\'historique des actions cscm sur le projet.
+
+version: 1
+project_name: $name
+created_at: "$now"
+backend: $backend
+features: []
+auth:
+  configured: false
+  configured_at: ""
+  email: false
+  social: false
+  files_created: []
+actions:
+  - timestamp: "$now"
     command: init
     args:
-    - $name
-    ''';
-    stateFile.writeAsStringSync(comment + yaml);
+      - $name
+''';
+    stateFile.writeAsStringSync(yaml);
   }
 
   // ═══════════════════════════════════════════════════
@@ -544,7 +537,7 @@ class InitCommand extends Command {
 }
 ''';
 
-String _supabaseConstants() => '''
+  String _supabaseConstants() => '''
 class SupabaseApiConstants {
 //  Renseignez vos cles dans le fichier .env
 static const String apiUrl = String.fromEnvironment(
@@ -558,7 +551,7 @@ static const String apiUrl = String.fromEnvironment(
 }
 ''';
 
-String _themeConst(String name) => r'''
+  String _themeConst(String name) => r'''
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -583,13 +576,13 @@ late ThemeData lightTheme;
 late ThemeData darkTheme;
 ''';
 
-String _textStyles(String name) => '''
+  String _textStyles(String name) => '''
 import 'package:$name/config/theme/theme_const.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class TextStyles {
-static TextStyle titleLarge({
+  static TextStyle titleLarge({
 required BuildContext context,
 Color? color,
 double? fontSize,
@@ -682,7 +675,7 @@ FontWeight? fontWeight,
 }
 ''';
 
-String _themeProvider(String name) => '''
+  String _themeProvider(String name) => '''
 import 'package:$name/core/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -693,7 +686,7 @@ return storage.isThemeDark() ? ThemeMode.dark : ThemeMode.light;
 });
 ''';
 
-String _appAction() => '''
+  String _appAction() => '''
 /// Interface de base pour toutes les actions de l'application.
 /// Chaque action porte un message de succes, d'erreur,
 /// et indique s'il s'agit d'une action d'ecriture.
@@ -704,7 +697,7 @@ bool get isWriteAction;
 }
 ''';
 
-String _storageService() => '''
+  String _storageService() => '''
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -738,7 +731,7 @@ return theme == 'darkTheme';
 }
 ''';
 
-String _injectionContainer(String name) => '''
+  String _injectionContainer(String name) => '''
 import 'package:get_it/get_it.dart';
 import 'package:$name/core/services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -748,17 +741,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-// Initialisation des services core
-final prefs = await SharedPreferences.getInstance();
-sl.registerSingleton<StorageService>(StorageService(prefs));
+  // Initialisation des services core
+  final prefs = await SharedPreferences.getInstance();
+  sl.registerSingleton<StorageService>(StorageService(prefs));
 
-// [INIT_ANCHOR]
+  // [INIT_ANCHOR]
 }
 
 // [INIT_METHOD_ANCHOR]
 ''';
 
-String _exceptions() => '''
+  String _exceptions() => '''
 /// Exceptions serveur (API, base de donnees)
 class ServerException implements Exception {
 final String message;
@@ -799,7 +792,7 @@ const UnexpectedException({required this.message});
 }
 ''';
 
-String _failures() => '''
+  String _failures() => '''
 import 'package:equatable/equatable.dart';
 
 abstract class Failure extends Equatable {
@@ -843,7 +836,7 @@ const UnexpectedFailure({required super.message, super.code});
 }
 ''';
 
-String _errorManager() => '''
+  String _errorManager() => '''
 import '../error/failures.dart';
 
 /// Mappe les failures en messages comprehensibles par l'utilisateur.
@@ -881,7 +874,7 @@ return failure.message.isNotEmpty ? failure.message : 'Une erreur est survenue.'
 }
 ''';
 
-String _networkInfo() => '''
+  String _networkInfo() => '''
 import 'dart:async';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
@@ -903,7 +896,7 @@ Stream<bool> get onStatusChange => _connectionChecker.onStatusChange.map((s) => 
 }
 ''';
 
-String _appRouter(String name) => '''
+  String _appRouter(String name) => '''
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -925,7 +918,7 @@ return GoRouter(
 });
 ''';
 
-String _typedefs(String name) => '''
+  String _typedefs(String name) => '''
 import 'package:dartz/dartz.dart';
 import 'package:$name/core/error/failures.dart';
 
@@ -934,7 +927,7 @@ typedef ResultVoid = Future<Either<Failure, void>>;
 typedef MapData = Map<String, dynamic>;
 ''';
 
-String _successErrorListener(String name) => '''
+  String _successErrorListener(String name) => '''
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:$name/core/error/failures.dart';
@@ -983,13 +976,13 @@ return child;
 }
 ''';
 
-String _lastNetworkTimeProvider() => '''
+  String _lastNetworkTimeProvider() => '''
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final lastNetworkErrorTimeProvider = StateProvider<DateTime?>((ref) => null);
 ''';
 
-String _showToast() => '''
+  String _showToast() => '''
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 
@@ -1011,7 +1004,7 @@ toastification.show(
 }
 ''';
 
-String _snackbar() => '''
+  String _snackbar() => '''
 import 'package:flutter/material.dart';
 
 class Snackbar {
@@ -1042,7 +1035,7 @@ ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 ''';
 
-String _loadingWidget() => '''
+  String _loadingWidget() => '''
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
@@ -1075,9 +1068,9 @@ return Center(
 }
 ''';
 
-String _main(String name, String backend) {
-  final hasSupabase = backend == 'supabase';
-  return '''
+  String _main(String name, String backend) {
+    final hasSupabase = backend == 'supabase';
+    return '''
   import 'package:flutter/material.dart';
   import 'package:flutter_riverpod/flutter_riverpod.dart';
   import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -1126,9 +1119,9 @@ return ScreenUtilInit(
 }
 }
 ''';
-}
+  }
 
-String _envTemplate() => '''
+  String _envTemplate() => '''
 # ═══════════════════════════════════════
 # Variables d'environnement
 # ====== :( Ne jamais commiter ce fichier avec de vraies cles !
@@ -1138,7 +1131,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
 ''';
 
-String _analysisOptions() => '''
+  String _analysisOptions() => '''
 include: package:flutter_lints/flutter.yaml
 
 analyzer:

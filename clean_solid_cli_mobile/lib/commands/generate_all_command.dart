@@ -89,16 +89,16 @@ class GenerateAllCommand extends Command {
     print(' Toutes les features ont été générées avec succès !');
   }
 
-  void _generateFeature(_FeatureDef feature, String projectName) {
+  Future<void> _generateFeature(
+    _FeatureDef feature,
+    String projectName,
+  ) async {
     final snakeFeatureName = ReformateClassName.formatToSnakeCase(feature.name);
     final capitalizedName = ReformateClassName.capitalizeClassName(
       featureName: snakeFeatureName,
     );
 
-    print('  ${capitalizedName}...');
-
-    // ── Activer le tracker pour cette feature ──
-    activeTracker = FileTracker();
+    print(' ${capitalizedName}...');
 
     // Générer les templates (entity, model, remote source, etc.)
     for (var type in FileTemplateType.values) {
@@ -110,13 +110,11 @@ class GenerateAllCommand extends Command {
           templateType: type,
         );
 
-        FileHelper.generateFormTemplate(
+        await FileHelper.generateFormTemplate(
           featureName: feature.name,
           templateName: type.name,
           targetPath: targetPath,
         );
-
-        activeTracker!.trackCreated(targetPath);
       } catch (_) {
         // Fichier existe déjà ou autre erreur — on continue
       }
@@ -130,43 +128,19 @@ class GenerateAllCommand extends Command {
           fieldsRaw: feature.fieldsRaw,
           projectName: projectName,
         );
-        print('    Champs injectes.');
+        print('  Champs injectés.');
       } catch (e) {
-        print("    Erreur d'implementation : $e");
+        print(" Erreur d'implémentation : $e");
       }
     }
 
     // Mettre à jour l'injection de dépendances
     InjectionHelper.updateInjectionContainer(feature.name, capitalizedName);
-    activeTracker!.trackUpdated('lib/core/di/injection_container.dart');
 
     // Mettre à jour le ErrorListener
     ErrorListenerHelper.updateErrorListener(capitalizedName, snakeFeatureName);
-    activeTracker!.trackUpdated(
-      'lib/core/mainErrorListener/success_error_listener.dart',
-    );
 
-    // ── Sauvegarder dans le state ──
-    final fields =
-        feature.fieldsRaw.isNotEmpty
-            ? FieldParser.parse(feature.fieldsRaw)
-            : <dynamic>[];
-
-    ProjectState.addFeature(
-      rawName: feature.name,
-      snakeName: snakeFeatureName,
-      pascalName: capitalizedName,
-      fields: activeTracker!.fieldsToRecords(fields),
-      filesCreated: activeTracker!.created,
-      filesUpdated: activeTracker!.updated,
-      sqlMigration: activeTracker!.lastSqlMigration,
-    );
-
-    // ── Réinitialiser le tracker ──
-    activeTracker!.reset();
-
-    print('    ${capitalizedName} termine (state enregistre).');
-    print('');
+    print(' ${capitalizedName} terminé.\n');
   }
 
   // ═══════════════════════════════════════════════════
