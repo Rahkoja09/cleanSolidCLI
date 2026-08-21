@@ -67,7 +67,7 @@ class {{name}}RemoteSourceImpl implements {{name}}RemoteSource {
           .order("created_at", ascending: false)
           .range(start, end);
 
-      return (res as List).map((data) => {{name}}Model.fromMap(data)).toList();
+      return (res as List).map((data) => {{name}}Model.fromMap(data as Map<String, dynamic>)).toList();
     } on PostgrestException catch (e) {
       throw ApiException(message: e.message, code: e.code ?? "000");
     } catch (e) {

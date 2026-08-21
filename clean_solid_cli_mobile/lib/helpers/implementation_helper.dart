@@ -117,22 +117,26 @@ class ImplementationHelper {
 
   static String _buildEnumContent(Field field) {
     final className = field.enumClassName;
-    final values = field.dartEnumValues.map((v) => '  $v,').join('\n');
+    final values = field.dartEnumValues;
+    final valuesStr = values.asMap().entries.map((e) {
+      final suffix = e.key == values.length - 1 ? ';' : ',';
+    return '  ${e.value}$suffix';
+    }).join('\n');
 
     return '''enum $className {
- $values
+    $valuesStr
 
-  String get value => name;
+    String get value => name;
 
-  static $className? fromString(String? value) {
+    static $className? fromString(String? value) {
     if (value == null) return null;
     for (final e in $className.values) {
       if (e.value == value) return e;
-    }
-    return null;
   }
-}
-''';
+  return null;
+  }
+  }
+  ''';
   }
 
   static String _getFilePathForType(ImplementationType type, String snake) {
