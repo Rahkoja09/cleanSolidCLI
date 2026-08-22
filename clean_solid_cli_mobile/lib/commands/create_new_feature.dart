@@ -12,6 +12,7 @@ import 'package:clean_solid_cli_mobile/utils/interactive_prompt.dart';
 import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:clean_solid_cli_mobile/utils/field_parser.dart';
 import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
+import 'package:clean_solid_cli_mobile/helpers/route_helper.dart';
 
 class CreateNewFeature extends Command {
   @override
@@ -43,6 +44,13 @@ class CreateNewFeature extends Command {
       help: 'Commiter automatiquement apres la creation',
       defaultsTo: false,
       negatable: false,
+    );
+    argParser.addFlag(
+      'route',
+      abbr: 'R',
+      help: 'Enregistrer automatiquement la route GoRouter',
+      defaultsTo: false,
+        negatable: false,
     );
   }
 
@@ -164,10 +172,20 @@ class CreateNewFeature extends Command {
         );
       }
 
+      // Route auto
+      final autoRoute = argResults?['route'] as bool? ?? false;
+      if (autoRoute) {
+        CliUI.section('Route');
+        RouteHelper.addRoute(featureName: featureName);
+      }
+
+      // Resume
+
       // Resume
       CliUI.success('Feature [$capitalizedName] creee avec succes');
       CliUI.nextSteps([
         'Implementez l\'UI dans lib/features/$snakeFeatureName/presentation/pages/${snakeFeatureName}_page.dart',
+        if (!autoRoute) 'Ajoutez la route : cscm route add $snakeFeatureName',
       ]);
 
       // ── Auto commit ──

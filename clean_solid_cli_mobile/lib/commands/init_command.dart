@@ -7,7 +7,6 @@ import 'package:clean_solid_cli_mobile/utils/config_reader.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
-import 'package:path/path.dart' as p;
 
 class InitCommand extends Command {
   @override
@@ -459,32 +458,22 @@ class InitCommand extends Command {
 
   /// Resolve the path to a bundled asset inside the cscm package.
   String? _resolveAssetPath(String relativePath) {
-    // 1. Platform.script (dart run bin/main.dart)
-    try {
-      final scriptPath = Platform.script.toFilePath();
-      final binDir = Directory(scriptPath).parent;
-      final repoRoot = binDir.parent;
-      final candidate = p.join(repoRoot.path, 'lib', relativePath);
-      if (File(candidate).existsSync()) return candidate;
-    } catch (_) {}
-
-    // 2. CWD relative
-    for (final c in ['lib/$relativePath', '../lib/$relativePath']) {
+    // Try to find the asset relative to the running cscm script
+    final candidates = ['lib/$relativePath', '../lib/$relativePath'];
+    for (final c in candidates) {
       if (File(c).existsSync()) return c;
     }
-
-    // 3. Global pub cache
+    // When installed globally, look in pub cache
     final home = Platform.environment['HOME'];
     if (home != null) {
-      for (final prefix in [
-        '$home/.dart_tool/pub/global_packages/clean_solid_cli_mobile',
-        '$home/.pub-cache/global_packages/clean_solid_cli_mobile',
-      ]) {
-        final candidate = '$prefix/lib/$relativePath';
-        if (File(candidate).existsSync()) return candidate;
+      final globalPaths = [
+        '$home/.dart_tool/pub/global_packages/clean_solid_cli_mobile/lib/$relativePath',
+        '$home/.pub-cache/global_packages/clean_solid_cli_mobile/lib/$relativePath',
+      ];
+      for (final p in globalPaths) {
+        if (File(p).existsSync()) return p;
       }
     }
-
     CliUI.warning('Asset non trouve: $relativePath');
     return null;
   }
@@ -552,22 +541,53 @@ static const String apiUrl = String.fromEnvironment(
 ''';
 
   String _themeConst(String name) => r'''
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+  import 'dart:convert';
+  import 'package:flutter/material.dart';
+  import 'package:flutter/services.dart';
 
-class ThemeConst {
-static const String currentFontFamily = 'Roboto';
+  class ThemeConst {
+  static const String currentFontFamily = 'Roboto';
 
-static Future<void> initTheme() async {
-final lightJson = await rootBundle.loadString('assets/theme/light_theme.json');
-final darkJson = await rootBundle.loadString('assets/theme/dark_theme.json');
+  static Future<void> initTheme() async {
+  final lightJson = await rootBundle.loadString(
+    'assets/theme/light_theme.json',
+    );
+    final darkJson = await rootBundle.loadString(
+      'assets/theme/dark_theme.json',
+      );
 
-lightTheme = ThemeData.fromJson(
-  json.decode(lightJson) as Map<String, dynamic>,
-  );
-  darkTheme = ThemeData.fromJson(
-    json.decode(darkJson) as Map<String, dynamic>,
+      // Remplacement de la méthode manquante par notre fonction personnalisée
+      lightTheme = _buildThemeFromJson(
+        json.decode(lightJson) as Map<String, dynamic>,
+        Brightness.light,
+        );
+        darkTheme = _buildThemeFromJson(
+          json.decode(darkJson) as Map<String, dynamic>,
+          Brightness.dark,
+          );
+}
+
+// Fonction magique pour transformer le JSON en ThemeData
+static ThemeData _buildThemeFromJson(Map<String, dynamic> json, Brightness brightness) {
+// Fonction utilitaire pour convertir une chaîne "#HEX" ou "0xFF" en Color Flutter
+Color parseColor(String? hexString) {
+if (hexString == null) return Colors.blue; // Couleur par défaut si absente
+final cleanHex = hexString.replaceAll('#', '').replaceAll('0x', '');
+if (cleanHex.length == 6) {
+  return Color(int.parse('FF$cleanHex', radix: 16)); // Ajoute l'opacité FF (100%) ------
+}
+return Color(int.parse(cleanHex, radix: 16));
+}
+
+return ThemeData(
+  brightness: brightness,
+  fontFamily: currentFontFamily,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: parseColor(json['primary'] as String?),
+    brightness: brightness,
+    primary: parseColor(json['primary'] as String?),
+    surface: parseColor(json['surface'] as String?),
+    ),
     );
 }
 }
@@ -582,7 +602,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class TextStyles {
-  static TextStyle titleLarge({
+static TextStyle titleLarge({
 required BuildContext context,
 Color? color,
 double? fontSize,
@@ -741,11 +761,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // Initialisation des services core
-  final prefs = await SharedPreferences.getInstance();
-  sl.registerSingleton<StorageService>(StorageService(prefs));
+// Initialisation des services core
+final prefs = await SharedPreferences.getInstance();
+sl.registerSingleton<StorageService>(StorageService(prefs));
 
-  // [INIT_ANCHOR]
+// [INIT_ANCHOR]
 }
 
 // [INIT_METHOD_ANCHOR]

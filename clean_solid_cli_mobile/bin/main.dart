@@ -16,6 +16,7 @@ import 'package:clean_solid_cli_mobile/commands/test_command.dart';
 import 'package:clean_solid_cli_mobile/commands/undo_command.dart';
 import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
+import 'package:clean_solid_cli_mobile/commands/route_command.dart';
 
 const _version = '2.0.0';
 
@@ -74,6 +75,8 @@ void main(List<String> arguments) async {
   runner.addCommand(StatusCommand());
   runner.addCommand(UndoCommand());
   runner.addCommand(CommitCommand());
+
+  runner.addCommand(RouteCommand());
 
   // ═══════════════════════════════════════════════════
   // EXECUTION
