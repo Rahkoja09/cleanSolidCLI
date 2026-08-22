@@ -95,8 +95,12 @@ class CommitCommand extends Command {
     final files = <String>{};
 
     // State file itself
-    files.add(ProjectState.stateFileName);
-    files.add(ConfigReader.configFileName);
+    if (File(ProjectState.stateFileName).existsSync()) {
+      files.add(ProjectState.stateFileName);
+    }
+    if (File(ConfigReader.configFileName).existsSync()) {
+      files.add(ConfigReader.configFileName);
+    }
 
     // Core files
     final coreDir = Directory('lib/core');
