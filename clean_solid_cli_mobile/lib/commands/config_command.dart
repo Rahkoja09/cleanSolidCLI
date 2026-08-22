@@ -1,12 +1,11 @@
 import 'package:args/command_runner.dart';
 import 'package:clean_solid_cli_mobile/utils/config_reader.dart';
-import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'dart:io';
 
 class ConfigCommand extends Command {
   @override
   String get description =>
-      'Creer ou mettre a jour le fichier de configuration .cscm.yaml';
+      'Créer ou mettre à jour le fichier de configuration .cscm.yaml';
 
   @override
   String get name => 'config';
@@ -21,7 +20,7 @@ class ConfigCommand extends Command {
     argParser.addOption(
       'backend',
       abbr: 'b',
-      help: 'Backend a utiliser (supabase | firebase | none)',
+      help: 'Backend à utiliser (supabase | firebase | none)',
       defaultsTo: 'supabase',
       allowed: ['supabase', 'firebase', 'none'],
     );
@@ -34,21 +33,21 @@ class ConfigCommand extends Command {
     if (name == null || name.isEmpty) {
       if (ConfigReader.configExists()) {
         final config = ConfigReader.read();
-        CliUI.header('Configuration actuelle');
-        print('  ${CliUI.dim('project_name:')}  ${config.projectName}');
-        print('  ${CliUI.dim('backend:')}      ${config.backend}');
-        print('  ${CliUI.dim('state_mgmt:')}   ${config.stateManagement}');
-        print('  ${CliUI.dim('di:')}           ${config.di}');
-        print('  ${CliUI.dim('screenutil:')}   ${config.useScreenUtil}');
-        print('  ${CliUI.dim('go_router:')}    ${config.useGoRouter}');
+        print('📋 Configuration actuelle :');
+        print('   Nom du projet  : ${config.projectName}');
+        print('   Backend         : ${config.backend}');
+        print('   State Mgmt      : ${config.stateManagement}');
+        print('   DI              : ${config.di}');
+        print('   ScreenUtil      : ${config.useScreenUtil}');
+        print('   GoRouter        : ${config.useGoRouter}');
         return;
       }
 
       // Demander le nom interactivement
-      stdout.write('  Nom du projet (snake_case) : ');
+      stdout.write('Nom du projet (snake_case) : ');
       final inputName = stdin.readLineSync()?.trim();
       if (inputName == null || inputName.isEmpty) {
-        CliUI.error('Nom du projet requis. Utilisez : cscm config -n mon_projet');
+        print('Nom du projet requis. Utilisez : cscm config -n mon_projet');
         return;
       }
 
@@ -56,7 +55,6 @@ class ConfigCommand extends Command {
         projectName: inputName,
         backend: argResults?['backend'] as String? ?? 'supabase',
       );
-      CliUI.success('Configuration creee');
       return;
     }
 
@@ -64,6 +62,5 @@ class ConfigCommand extends Command {
       projectName: name,
       backend: argResults?['backend'] as String? ?? 'supabase',
     );
-    CliUI.success('Configuration creee');
   }
 }

@@ -11,12 +11,12 @@ import 'package:clean_solid_cli_mobile/commands/history_command.dart';
 import 'package:clean_solid_cli_mobile/commands/implemente_new_feature.dart';
 import 'package:clean_solid_cli_mobile/commands/init_command.dart';
 import 'package:clean_solid_cli_mobile/commands/list_command.dart';
+import 'package:clean_solid_cli_mobile/commands/route_commande.dart';
 import 'package:clean_solid_cli_mobile/commands/status_command.dart';
 import 'package:clean_solid_cli_mobile/commands/test_command.dart';
 import 'package:clean_solid_cli_mobile/commands/undo_command.dart';
 import 'package:clean_solid_cli_mobile/exceptions/cli_exception.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
-import 'package:clean_solid_cli_mobile/commands/route_command.dart';
 
 const _version = '2.0.0';
 

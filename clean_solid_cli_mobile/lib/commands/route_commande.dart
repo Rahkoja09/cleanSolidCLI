@@ -40,21 +40,37 @@ class RouteCommand extends Command {
 
   @override
   Future<void> run() async {
-    final subcommand = argResults?.rest.firstOrNull;
+    final rest = argResults?.rest.toList() ?? [];
+    final first = rest.firstOrNull;
     final shouldRemove = argResults?['remove'] as bool? ?? false;
 
-    // Sans sous-commande ou "list" → afficher les routes
-    if (subcommand == null || subcommand == 'list' || subcommand == 'ls') {
+    // cscm route list | ls
+    if (first == null || first == 'list' || first == 'ls') {
       RouteHelper.listRoutes();
       return;
     }
 
-    final featureName = subcommand;
+    // cscm route add <feature> | cscm route remove <feature>
+    String featureName;
+    bool isRemove = shouldRemove;
+
+    if (first == 'add' || first == 'remove') {
+      isRemove = (first == 'remove') || shouldRemove;
+      if (rest.length < 2) {
+        CliUI.error('Precisez le nom de la feature.');
+        CliUI.hint('cscm route add <feature>');
+        return;
+      }
+      featureName = rest[1];
+    } else {
+      // cscm route <feature> (add par defaut)
+      featureName = first;
+    }
+
     final customPath = argResults?['path'] as String?;
     final parentFeature = argResults?['parent'] as String?;
     final autoCommit = argResults?['commit'] as bool? ?? false;
 
-    // Validation anti-traversal
     if (featureName.contains('..') ||
       featureName.contains('/') ||
       featureName.contains('\\')) {
@@ -62,7 +78,7 @@ class RouteCommand extends Command {
     return;
       }
 
-      if (shouldRemove) {
+      if (isRemove) {
         RouteHelper.removeRoute(featureName: featureName);
       } else {
         RouteHelper.addRoute(
@@ -72,11 +88,10 @@ class RouteCommand extends Command {
         );
       }
 
-      // Auto commit
       if (autoCommit &&
         GitHelper.isGitInstalled() &&
         GitHelper.isGitRepo()) {
-        final action = shouldRemove ? 'route:remove' : 'route:add';
+        final action = isRemove ? 'route:remove' : 'route:add';
       final result = GitHelper.commit(
         message: 'cscm: $action $featureName',
       );

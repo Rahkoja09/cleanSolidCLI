@@ -4,8 +4,6 @@ import 'package:clean_solid_cli_mobile/utils/get_projet_item.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/utils/anchor_helper.dart';
 
-/// Gere les routes GoRouter dans lib/core/router/app_router.dart.
-/// Utilise le systeme d'ancre // [ROUTES_ANCHOR] du template init.
 class RouteHelper {
   static const _routerPath = 'lib/core/router/app_router.dart';
 
@@ -29,6 +27,7 @@ class RouteHelper {
     final pascalName = ReformateClassName.capitalizeClassName(
       featureName: snakeName,
     );
+    final pageClassName = '${pascalName}Page';
 
     final pagePath =
     'lib/features/$snakeName/presentation/pages/${snakeName}_page.dart';
@@ -40,7 +39,7 @@ class RouteHelper {
 
     String content = file.readAsStringSync();
 
-    if (content.contains('const $pascalNamePage()')) {
+    if (content.contains('const $pageClassName()')) {
       CliUI.info('Route pour $pascalName deja presente');
       return;
     }
@@ -56,14 +55,14 @@ class RouteHelper {
         content: content,
         parentFeature: parentFeature,
         snakeName: snakeName,
-        pascalName: pascalName,
+        pageClassName: pageClassName,
         path: path,
       );
     } else {
       content = _addTopLevelRoute(
         content: content,
         snakeName: snakeName,
-        pascalName: pascalName,
+        pageClassName: pageClassName,
         path: path,
       );
     }
@@ -75,10 +74,10 @@ class RouteHelper {
       final parentSnake =
       ReformateClassName.formatToSnakeCase(parentFeature);
       CliUI.success(
-        'Route enfant : /$parentSnake/${path ?? snakeName} -> $pascalNamePage',
+        'Route enfant : /$parentSnake/${path ?? snakeName} -> $pageClassName',
       );
     } else {
-      CliUI.success('Route ajoutee : $displayPath -> $pascalNamePage');
+      CliUI.success('Route ajoutee : $displayPath -> $pageClassName');
     }
   }
 
@@ -97,15 +96,16 @@ class RouteHelper {
     final pascalName = ReformateClassName.capitalizeClassName(
       featureName: snakeName,
     );
+    final pageClassName = '${pascalName}Page';
 
     String content = file.readAsStringSync();
 
-    if (!content.contains('const $pascalNamePage()')) {
+    if (!content.contains('const $pageClassName()')) {
       CliUI.warning('Aucune route pour $pascalName dans app_router.dart');
       return;
     }
 
-    content = _removeRouteBlock(content, pascalName);
+    content = _removeRouteBlock(content, pageClassName);
     content = _removeImport(content, '${snakeName}_page.dart');
 
     file.writeAsStringSync(content);
@@ -146,13 +146,13 @@ class RouteHelper {
   static String _addTopLevelRoute({
     required String content,
     required String snakeName,
-    required String pascalName,
+    required String pageClassName,
     required String? path,
   }) {
     final routePath = path ?? '/$snakeName';
     final block = """      GoRoute(
       path: '$routePath',
-      builder: (context, state) => const $pascalNamePage(),
+      builder: (context, state) => const $pageClassName(),
       ),
       // [ROUTES_ANCHOR]""";
 
@@ -179,7 +179,7 @@ class RouteHelper {
     required String content,
     required String parentFeature,
     required String snakeName,
-    required String pascalName,
+    required String pageClassName,
     required String? path,
   }) {
     final parentSnake =
@@ -190,11 +190,11 @@ class RouteHelper {
     final childPath = path ?? snakeName;
     final childrenAnchor = '// [CHILDREN_${parentPascal}_ANCHOR]';
 
-    // Cas 1 : l'ancre enfants existe deja → injecter dedans
+    // Cas 1 : l'ancre enfants existe deja
     if (content.contains(childrenAnchor)) {
       final childBlock = """          GoRoute(
         path: '$childPath',
-        builder: (context, state) => const $pascalNamePage(),
+        builder: (context, state) => const $pageClassName(),
         ),
         $childrenAnchor""";
 
@@ -207,7 +207,7 @@ class RouteHelper {
         if (result != content) return result;
     }
 
-    // Cas 2 : transformer la route parent existante (sans children)
+    // Cas 2 : transformer la route parent existante
     final parentPattern =
     RegExp("GoRoute\\s*\\(\\s*path:\\s*'/$parentSnake'");
     final parentMatch = parentPattern.firstMatch(content);
@@ -224,7 +224,7 @@ class RouteHelper {
       parentBlock: parentBlock,
       parentSnake: parentSnake,
       childPath: childPath,
-      childPascalName: pascalName,
+      pageClassName: pageClassName,
       parentPascalName: parentPascal,
     );
 
@@ -235,7 +235,6 @@ class RouteHelper {
     );
   }
 
-  /// Extrait un bloc complet de GoRoute( ... ) a partir de [startPos].
   static String? _extractBlock(String content, int startPos) {
     var depth = 0;
     var foundOpen = false;
@@ -247,7 +246,6 @@ class RouteHelper {
       } else if (content[i] == ')') {
         depth--;
         if (foundOpen && depth == 0) {
-          // Include trailing comma + newline
           var end = i + 1;
           if (end < content.length && content[end] == ',') end++;
           if (end < content.length && content[end] == '\n') end++;
@@ -258,30 +256,27 @@ class RouteHelper {
     return null;
   }
 
-  /// Transforme un GoRoute sans children en GoRoute avec children.
   static String _transformParentToHaveChildren({
     required String parentBlock,
     required String parentSnake,
     required String childPath,
-    required String childPascalName,
+    required String pageClassName,
     required String parentPascalName,
   }) {
-    // Remplacer builder: ... par redirect: ...
     final builderRegex = RegExp(
-      r"builder:\s*\(context,\s*state\)\s*=>\s*const\s*\w+Page\(\),?\s*\n?",
+      'builder:\\s*\\(context,\\s*state\\)\\s*=>\\s*const\\s*\\w+Page\\(\\),?\\s*\\n?',
     );
     String newBlock = parentBlock.replaceFirst(
       builderRegex,
       "redirect: (context, state) => '/$parentSnake/$childPath',\n",
     );
 
-    // Inserer children avant la derniere fermeture )
     final lastParen = newBlock.lastIndexOf(')');
     final childrenBlock = """
     children: [
     GoRoute(
       path: '$childPath',
-      builder: (context, state) => const $childPascalNamePage(),
+      builder: (context, state) => const $pageClassName(),
       ),
       // [CHILDREN_${parentPascalName}_ANCHOR]
       ],""";
@@ -293,8 +288,8 @@ class RouteHelper {
   //  PRIVE — remove
   // ═══════════════════════════════════════════════════════════════════
 
-  static String _removeRouteBlock(String content, String pascalName) {
-    final target = 'const $pascalNamePage()';
+  static String _removeRouteBlock(String content, String pageClassName) {
+    final target = 'const $pageClassName()';
     final targetIdx = content.indexOf(target);
     if (targetIdx == -1) return content;
 
@@ -318,14 +313,18 @@ class RouteHelper {
   static String _addImport(String content, String importLine) {
     if (content.contains(importLine)) return content;
 
-    final importRegex =
-    RegExp(r"^import\s+['\"][^'\"]+['\"];\s*", multiLine: true);
-    final matches = importRegex.allMatches(content);
-    if (matches.isEmpty) return content;
+    // Trouver le dernier import existant et inserer apres
+    final lines = content.split('\n');
+    int lastImportIdx = -1;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].trimLeft().startsWith('import ')) {
+        lastImportIdx = i;
+      }
+    }
+    if (lastImportIdx == -1) return content;
 
-    final lastImport = matches.last;
-    final insertPos = lastImport.end;
-    return '${content.substring(0, insertPos)}\n$importLine${content.substring(insertPos)}';
+    lines.insert(lastImportIdx + 1, importLine);
+    return lines.join('\n');
   }
 
   static String _removeImport(String content, String fileName) {
@@ -359,7 +358,6 @@ class RouteHelper {
         parenDepth = 0;
         currentPath = null;
         currentPage = null;
-        // top-level = 6 espaces, child = 10+ espaces
         routeIndent = line.length - line.trimLeft().length;
       }
 
@@ -369,19 +367,21 @@ class RouteHelper {
           if (line[c] == ')') parenDepth--;
         }
 
-        final pathMatch = RegExp(r"path:\s*['\"]([^'\"]+)['\"]").firstMatch(trimmed);
+        // path: '/xxx' ou path: 'xxx'
+        final pathMatch = RegExp("path:\\s*'([^']+)'").firstMatch(trimmed);
         if (pathMatch != null) currentPath = pathMatch.group(1);
 
+        // const XxxPage()
         final pageMatch =
         RegExp(r'const\s+(\w+Page)\(\)').firstMatch(trimmed);
         if (pageMatch != null) currentPage = pageMatch.group(1);
 
-        if (parenDepth == 0 && trimmed.endsWith(')')) {
+        if (parenDepth == 0 && (trimmed.endsWith(')') || trimmed.endsWith('),'))) {
           if (currentPath != null && currentPage != null) {
             final depth = routeIndent <= 6 ? 0 : 1;
             routes.add(_RouteEntry(
-              path: currentPath!,
-              page: currentPage!,
+              path: currentPath,
+              page: currentPage,
               depth: depth,
             ));
           }
