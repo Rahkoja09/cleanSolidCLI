@@ -26,64 +26,64 @@ class InjectionHelper {
     final snakeName = ReformateClassName.formatToSnakeCase(featureName);
 
     final imports = """
-import 'package:$projectName/features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
-import 'package:$projectName/features/$snakeName/data/source/${snakeName}_remote_source.dart';
-import 'package:$projectName/features/$snakeName/domain/repository/${snakeName}_repository.dart';
-import 'package:$projectName/features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
-// [IMPORT_ANCHOR]""";
+    import 'package:$projectName/features/$snakeName/data/repository/${snakeName}_repository_impl.dart';
+    import 'package:$projectName/features/$snakeName/data/source/${snakeName}_remote_source.dart';
+    import 'package:$projectName/features/$snakeName/domain/repository/${snakeName}_repository.dart';
+    import 'package:$projectName/features/$snakeName/domain/usecases/${snakeName}_usecases.dart';
+    // [IMPORT_ANCHOR]""";
 
     final initCall = "  _init$capitalizedName();\n  // [INIT_ANCHOR]";
 
     final initMethod = """
-Future<void> _init$capitalizedName() async {
-  sl.registerLazySingleton<${capitalizedName}RemoteSource>(
-    () => ${capitalizedName}RemoteSourceImpl(sl()),
+    Future<void> _init$capitalizedName() async {
+    sl.registerLazySingleton<${capitalizedName}RemoteSource>(
+      () => ${capitalizedName}RemoteSourceImpl(sl()),
+      );
+      sl.registerLazySingleton<${capitalizedName}Repository>(
+        () => ${capitalizedName}RepositoryImpl(sl(), sl()),
+        );
+        sl.registerLazySingleton(() => ${capitalizedName}Usecases(sl()));
+  }
+
+  // [INIT_METHOD_ANCHOR]""";
+
+  content = _safeReplace(
+    content,
+    '// [IMPORT_ANCHOR]',
+    imports,
+    'injection_container',
   );
-  sl.registerLazySingleton<${capitalizedName}Repository>(
-    () => ${capitalizedName}RepositoryImpl(sl(), sl()),
+  content = _safeReplace(
+    content,
+    '  // [INIT_ANCHOR]',
+    initCall,
+    'injection_container',
   );
-  sl.registerLazySingleton(() => ${capitalizedName}Usecases(sl()));
-}
+  content = _safeReplace(
+    content,
+    '// [INIT_METHOD_ANCHOR]',
+    initMethod,
+    'injection_container',
+  );
 
-// [INIT_METHOD_ANCHOR]""";
-
-    content = _safeReplace(
-      content,
-      '// [IMPORT_ANCHOR]',
-      imports,
-      'injection_container',
-    );
-    content = _safeReplace(
-      content,
-      '  // [INIT_ANCHOR]',
-      initCall,
-      'injection_container',
-    );
-    content = _safeReplace(
-      content,
-      '// [INIT_METHOD_ANCHOR]',
-      initMethod,
-      'injection_container',
-    );
-
-    file.writeAsStringSync(content);
-    CliUI.success('Injection Container mis a jour');
+  file.writeAsStringSync(content);
+  CliUI.success('Injection Container mis a jour');
   }
 
   static void _createNewContainer(File file) {
     file.createSync(recursive: true);
     file.writeAsStringSync("""
-import 'package:get_it/get_it.dart';
-// [IMPORT_ANCHOR]
+    import 'package:get_it/get_it.dart';
+    // [IMPORT_ANCHOR]
 
-final sl = GetIt.instance;
+    final sl = GetIt.instance;
 
-Future<void> init() async {
-  // [INIT_ANCHOR]
-}
+    Future<void> init({SharedPreferences? sharedPreferences}) async {
+    // [INIT_ANCHOR]
+  }
 
-// [INIT_METHOD_ANCHOR]
-""");
+  // [INIT_METHOD_ANCHOR]
+  """);
   }
 
   static void updateInjectionContainerAuth({
@@ -103,20 +103,20 @@ Future<void> init() async {
     String authImports = "";
     if (!content.contains('auth_remote_source.dart')) {
       authImports = """
-import 'package:$projectName/features/auth/data/repository/auth_repository_impl.dart';
-import 'package:$projectName/features/auth/data/source/auth_remote_source.dart';
-import 'package:$projectName/features/auth/data/source/auth_remote_source_impl.dart';
-import 'package:$projectName/features/auth/domain/repository/auth_repository.dart';
-import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';""";
+      import 'package:$projectName/features/auth/data/repository/auth_repository_impl.dart';
+      import 'package:$projectName/features/auth/data/source/auth_remote_source.dart';
+      import 'package:$projectName/features/auth/data/source/auth_remote_source_impl.dart';
+      import 'package:$projectName/features/auth/domain/repository/auth_repository.dart';
+      import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';""";
     }
 
     if (useEmail && !content.contains('email_auth_service.dart')) {
       authImports +=
-          "\nimport 'package:$projectName/features/auth/data/source/email_auth_service.dart';";
+      "\nimport 'package:$projectName/features/auth/data/source/email_auth_service.dart';";
     }
     if (useSocial && !content.contains('social_auth_service.dart')) {
       authImports +=
-          "\nimport 'package:$projectName/features/auth/data/source/social_auth_service.dart';";
+      "\nimport 'package:$projectName/features/auth/data/source/social_auth_service.dart';";
     }
 
     if (authImports.isNotEmpty) {
@@ -186,8 +186,8 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
 
     if (useSocial) {
       services +=
-          "  sl.registerLazySingleton(() => SocialAuthService(sl()));\n";
-      remoteSourceParams += ", sl()";
+      "  sl.registerLazySingleton(() => SocialAuthService(sl()));\n";
+    remoteSourceParams += ", sl()";
     }
     if (useEmail) {
       services += "  sl.registerLazySingleton(() => EmailAuthService(sl()));\n";
@@ -195,18 +195,18 @@ import 'package:$projectName/features/auth/domain/usecases/auth_usecases.dart';"
     }
 
     return """
-Future<void> _initAuth() async {
- $services
-  sl.registerLazySingleton<AuthRemoteSource>(
-    () => AuthRemoteSourceImpl($remoteSourceParams),
-  );
+    Future<void> _initAuth() async {
+    $services
+    sl.registerLazySingleton<AuthRemoteSource>(
+      () => AuthRemoteSourceImpl($remoteSourceParams),
+      );
 
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl(), sl()),
-  );
+      sl.registerLazySingleton<AuthRepository>(
+        () => AuthRepositoryImpl(sl(), sl()),
+        );
 
-  sl.registerLazySingleton(() => AuthUsecases(sl()));
-}
-""";
+        sl.registerLazySingleton(() => AuthUsecases(sl()));
+  }
+  """;
   }
 }

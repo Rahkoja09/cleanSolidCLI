@@ -11,7 +11,7 @@ import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
 class InitCommand extends Command {
   @override
   String get description =>
-      'Creer un projet Flutter complet en Clean Architecture depuis zero';
+  'Creer un projet Flutter complet en Clean Architecture depuis zero';
 
   @override
   String get name => 'init';
@@ -28,7 +28,7 @@ class InitCommand extends Command {
       abbr: 'b',
       help: 'Backend a configurer (supabase | firebase | none)',
       defaultsTo: 'supabase',
-      allowed: ['supabase', 'firebase', 'none'],
+        allowed: ['supabase', 'firebase', 'none'],
     );
     argParser.addOption(
       'org',
@@ -40,21 +40,21 @@ class InitCommand extends Command {
       'no-git',
       help: 'Skip git initialization',
       defaultsTo: false,
-      negatable: false,
+        negatable: false,
     );
   }
 
   @override
   Future<void> run() async {
     final projectName =
-        (argResults!['name'] as String?) ??
-        (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
+    (argResults!['name'] as String?) ??
+    (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
 
     if (projectName == null || projectName.trim().isEmpty) {
       throw const CliException(
         'Veuillez specifier un nom de projet.\n'
-        '   Usage : cscm init <nom_du_projet>\n'
-        '   Exemple : cscm init mon_app',
+      '   Usage : cscm init <nom_du_projet>\n'
+      '   Exemple : cscm init mon_app',
       );
     }
 
@@ -65,115 +65,116 @@ class InitCommand extends Command {
 
     // Validation anti path traversal
     if (projectName.contains('..') ||
-        projectName.contains('/') ||
-        projectName.contains('\\')) {
+      projectName.contains('/') ||
+      projectName.contains('\\')) {
       throw const CliException(
         'Le nom du projet contient des caracteres interdits.',
       );
-    }
+      }
 
-    // Validation org format
-    if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
-      throw CliException(
-        'Format d\'org invalide: "$org".\n'
-        '   Utilisez le format: com.company (ex: com.example, fr.maboite)',
-      );
-    }
-
-    // Verifier qu'on est pas dans un projet existant
-    if (File('pubspec.yaml').existsSync()) {
-      throw CliException(
-        'Un projet Flutter existe deja dans ce dossier.\n'
-        '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
-      );
-    }
-
-    CliUI.header('Initialisation du projet [$snakeName]');
-
-    // ── 1. flutter create ──
-    CliUI.section('Flutter create');
-
-    if (!GitHelper.isFlutterInstalled()) {
-      throw const CliException(
-        'Flutter n\'est pas installe ou n\'est pas dans le PATH.\n'
-        '   Installez Flutter: https://docs.flutter.dev/get-started/install',
-      );
-    }
-
-    await CliUI.withSpinner('flutter create $snakeName --org $org', () async {
-      final exitCode = GitHelper.flutterCreate(
-        projectName: snakeName,
-        org: org,
-      );
-      if (exitCode != 0) {
+      // Validation org format
+      if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
         throw CliException(
-          'flutter create a echoue (exit code: $exitCode).\n'
-          '   Verifiez que Flutter est correctement installe.',
+          'Format d\'org invalide: "$org".\n'
+        '   Utilisez le format: com.company (ex: com.example, fr.maboite)',
         );
       }
-      return null;
-    });
 
-    CliUI.success('Projet Flutter cree');
+      // Verifier qu'on est pas dans un projet existant
+      if (File('pubspec.yaml').existsSync()) {
+        throw CliException(
+          'Un projet Flutter existe deja dans ce dossier.\n'
+        '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
+        );
+      }
 
-    // ── 2. Overlay clean architecture ──
-    CliUI.section('Clean Architecture overlay');
-    _createProjectStructure(snakeName, backend);
+      CliUI.header('Initialisation du projet [$snakeName]');
 
-    // ── 3. .cscm.yaml ──
-    ConfigReader.createConfig(projectName: snakeName, backend: backend);
-    CliUI.success('.cscm.yaml cree');
+      // ── 1. flutter create ──
+      CliUI.section('Flutter create');
 
-    // ── 4. .cscm-state.yaml ──
-    _createProjectState(snakeName, snakeName, backend);
-    CliUI.success('.cscm-state.yaml cree');
+      if (!GitHelper.isFlutterInstalled()) {
+        throw const CliException(
+          'Flutter n\'est pas installe ou n\'est pas dans le PATH.\n'
+        '   Installez Flutter: https://docs.flutter.dev/get-started/install',
+        );
+      }
 
-    // ── 5. Git init ──
-    if (!noGit) {
-      CliUI.section('Git');
-      final projectDir = snakeName;
-
-      if (GitHelper.isGitInstalled()) {
-        if (!GitHelper.isGitRepo()) {
-          // cd into the created project, init git, then cd back
-          // We init in the project directory
-          if (GitHelper.initRepo(directory: projectDir)) {
-            CliUI.success('git init');
-
-            // Initial commit
-            final commitResult = GitHelper.commit(
-              message: 'init: cscm project $snakeName with clean architecture',
-              directory: projectDir,
+      await CliUI.withSpinner(
+        'flutter create $snakeName --org $org',
+        () async {
+          final exitCode = GitHelper.flutterCreate(
+            projectName: snakeName,
+            org: org,
+          );
+          if (exitCode != 0) {
+            throw CliException(
+              'flutter create a echoue (exit code: $exitCode).\n'
+            '   Verifiez que Flutter est correctement installe.',
             );
-            if (commitResult != null) {
-              CliUI.success('Initial commit cree');
-            } else {
-              CliUI.warning(
-                'Initial commit echoue (peut-etre .gitignore actif)',
+          }
+          return null;
+        },
+      );
+
+      CliUI.success('Projet Flutter cree');
+
+      // ── 2. Overlay clean architecture ──
+      CliUI.section('Clean Architecture overlay');
+      _createProjectStructure(snakeName, backend);
+
+      // ── 3. .cscm.yaml ──
+      ConfigReader.createConfig(projectName: snakeName, backend: backend);
+      CliUI.success('.cscm.yaml cree');
+
+      // ── 4. .cscm-state.yaml ──
+      _createProjectState(snakeName, snakeName, backend);
+      CliUI.success('.cscm-state.yaml cree');
+
+      // ── 5. Git init ──
+      if (!noGit) {
+        CliUI.section('Git');
+        final projectDir = snakeName;
+
+        if (GitHelper.isGitInstalled()) {
+          if (!GitHelper.isGitRepo()) {
+            // cd into the created project, init git, then cd back
+            // We init in the project directory
+            if (GitHelper.initRepo(directory: projectDir)) {
+              CliUI.success('git init');
+
+              // Initial commit
+              final commitResult = GitHelper.commit(
+                message: 'init: cscm project $snakeName with clean architecture',
+                directory: projectDir,
               );
+              if (commitResult != null) {
+                CliUI.success('Initial commit cree');
+              } else {
+                CliUI.warning('Initial commit echoue (peut-etre .gitignore actif)');
+              }
+            } else {
+              CliUI.warning('git init a echoue');
             }
           } else {
-            CliUI.warning('git init a echoue');
+            CliUI.info('Git repo deja present');
           }
         } else {
-          CliUI.info('Git repo deja present');
+          CliUI.warning('Git non installe, initialisation git ignoree');
         }
-      } else {
-        CliUI.warning('Git non installe, initialisation git ignoree');
       }
-    }
 
-    // ── 6. Summary ──
-    print('');
-    CliUI.success('Projet [$snakeName] cree avec succes !');
-    print('');
-    CliUI.nextSteps([
-      'cd $snakeName',
-      'flutter pub get',
-      if (backend == 'supabase' || backend == 'firebase')
-        'Configurer le fichier .env avec vos cles $backend',
-      'cscm create ma_feature -i "nom:string,prix:double"',
-    ]);
+      // ── 6. Summary ──
+      print('');
+      CliUI.success('Projet [$snakeName] cree avec succes !');
+      print('');
+      CliUI.nextSteps([
+        'cd $snakeName',
+        'flutter pub get',
+        if (backend == 'supabase' || backend == 'firebase')
+          'Configurer le fichier .env avec vos cles $backend',
+          'cscm create ma_feature -i "nom:string,prix:double"',
+      ]);
   }
 
   /// Overlay clean architecture files on top of the flutter create project.
@@ -190,8 +191,8 @@ class InitCommand extends Command {
       '$libDir/core/error',
       '$libDir/core/network',
       '$libDir/core/router',
-      '$libDir/core/utils',
       '$libDir/core/services',
+      '$libDir/core/utils',
       '$libDir/core/mainErrorListener',
       '$libDir/shared/widgets/popup',
       '$libDir/shared/widgets/loading',
@@ -215,20 +216,25 @@ class InitCommand extends Command {
       '$libDir/config/constants/supabase_api_constants.dart',
       _supabaseConstants(),
     );
-    _writeFile('$libDir/config/theme/theme_const.dart', _themeConst(name));
-    _writeFile('$libDir/config/theme/text_styles.dart', _textStyles(name));
     _writeFile(
       '$libDir/config/theme/theme_provider.dart',
       _themeProvider(name),
     );
+    _writeFile(
+      '$libDir/config/theme/theme_const.dart',
+      _themeConst(),
+    );
 
     // --- CORE ---
+    _writeFile(
+      '$libDir/core/services/storage_service.dart',
+      _storageService(),
+    );
     _writeFile('$libDir/core/actions/app_action.dart', _appAction());
     _writeFile(
       '$libDir/core/di/injection_container.dart',
-      _injectionContainer(name),
+      _injectionContainer(name, backend),
     );
-    _writeFile('$libDir/core/services/storage_service.dart', _storageService());
     _writeFile('$libDir/core/error/exceptions.dart', _exceptions());
     _writeFile('$libDir/core/error/failures.dart', _failures());
     _writeFile('$libDir/core/error/error_manager.dart', _errorManager());
@@ -267,10 +273,6 @@ class InitCommand extends Command {
     // .gitignore already created by flutter create, append our additions
     _appendGitignore(projectDir.path);
 
-    // --- THEME JSON ASSETS ---
-    _copyAssetFile('assets/theme/light_theme.json', projectDir.path);
-    _copyAssetFile('assets/theme/dark_theme.json', projectDir.path);
-
     // .gitkeep in empty dirs
     final gitkeeps = [
       '${projectDir.path}/assets/medias/icons',
@@ -293,6 +295,10 @@ class InitCommand extends Command {
     final pubspecFile = File('$projectDir/pubspec.yaml');
     if (!pubspecFile.existsSync()) return;
 
+    String content = pubspecFile.readAsStringSync();
+
+    // The flutter create pubspec has a "dependencies:" section.
+    // We need to add our packages after it.
     final additionalDeps = [
       '  flutter_riverpod: ^2.0.0',
       '  riverpod: ^2.6.1',
@@ -324,109 +330,73 @@ class InitCommand extends Command {
       '  mocktail: ^1.0.4',
     ];
 
-    final lines = pubspecFile.readAsLinesSync();
-    final result = <String>[];
+    // Add deps after existing dependency section
+    // Find the "dependencies:" line and add after cupertino_icons
+    final depsBlock = additionalDeps.join('\n');
+    if (content.contains('dependencies:')) {
+      // Insert after the last entry in the dependencies section
+      // We look for the "dev_dependencies:" or "flutter:" section as end marker
+      final devDepsMatch = RegExp(
+        r'^(dev_dependencies:)',
+        multiLine: true,
+      ).firstMatch(content);
 
-    // Track which top-level section we're in.
-    // A line is a "top-level section header" if it matches ^[a-z_]+:$
-    // and is at indent 0 (no leading spaces).
-    // We insert our deps/dev_deps right before the next top-level header.
-    int?
-    depsInsertIndex; // line index where we should insert deps (before this line)
-    int? devDepsInsertIndex;
-    int? flutterSectionIndex; // line index of the top-level "flutter:" section
-    bool flutterAssetsAdded = false;
-    bool usesMaterialDesignExists = false;
-
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      final trimmed = line.trim();
-
-      // Detect top-level section headers (no indent, ends with :)
-      final isTopLevelHeader =
-          line.isNotEmpty &&
-          !line.startsWith(' ') &&
-          !line.startsWith('\t') &&
-          RegExp(r'^[a-z_]+:$').hasMatch(trimmed);
-
-      if (isTopLevelHeader) {
-        switch (trimmed) {
-          case 'dependencies:':
-            // Insert our deps right before dev_dependencies (we'll find it later)
-            // For now just mark that we're past dependencies header
-            break;
-          case 'dev_dependencies:':
-            // Insert our regular deps right before this line
-            depsInsertIndex ??= i;
-          case 'flutter:':
-            // Insert our dev_deps right before this line (if not done yet)
-            devDepsInsertIndex ??= i;
-            // Record the top-level flutter section index
-            flutterSectionIndex ??= i;
-        }
+      if (devDepsMatch != null) {
+        content = content.replaceFirst(
+          devDepsMatch.group(0)!,
+          '$depsBlock\n\n${devDepsMatch.group(0)!}',
+        );
+      } else {
+        // Append at end
+        content = '$content\n$depsBlock\n';
       }
     }
 
-    // Check if uses-material-design already exists in the flutter section
-    if (flutterSectionIndex != null) {
-      for (int i = flutterSectionIndex! + 1; i < lines.length; i++) {
-        final line = lines[i];
-        // Stop at next top-level header
-        if (line.isNotEmpty &&
-            !line.startsWith(' ') &&
-            !line.startsWith('\t') &&
-            RegExp(r'^[a-z_]+:$').hasMatch(line.trim())) {
-          break;
-        }
-        if (line.trim() == 'uses-material-design: true') {
-          usesMaterialDesignExists = true;
-        }
-        if (line.contains('assets/medias/icons/')) {
-          flutterAssetsAdded = true;
-        }
+    // Add dev deps
+    final devDepsBlock = additionalDevDeps.join('\n');
+    if (content.contains('dev_dependencies:')) {
+      final flutterMatch = RegExp(
+        r'^(flutter:)',
+        multiLine: true,
+      ).firstMatch(content);
+
+      if (flutterMatch != null) {
+        content = content.replaceFirst(
+          flutterMatch.group(0)!,
+          '$devDepsBlock\n\n${flutterMatch.group(0)!}',
+        );
+      } else {
+        content = '$content\n$devDepsBlock\n';
       }
     }
 
-    // Build the final output line by line
-    for (int i = 0; i < lines.length; i++) {
-      // Insert regular deps before dev_dependencies
-      if (i == depsInsertIndex) {
-        result.add(additionalDeps.join('\n'));
-        result.add(''); // blank line
-      }
-
-      // Insert dev deps before flutter:
-      if (i == devDepsInsertIndex) {
-        result.add(additionalDevDeps.join('\n'));
-        result.add(''); // blank line
-      }
-
-      result.add(lines[i]);
-
-      // Add assets after uses-material-design in the flutter section
-      if (i == flutterSectionIndex && !flutterAssetsAdded) {
-        if (!usesMaterialDesignExists) {
-          result.add('  uses-material-design: true');
+    // Add assets to flutter section
+    if (content.contains('flutter:') && !content.contains('assets/medias/icons/')) {
+      content = content.replaceFirst(
+        'flutter:\n',
+        'flutter:\n'
+      '  uses-material-design: true\n'
+      '  assets:\n'
+      '    - assets/medias/icons/\n'
+      '    - assets/medias/animations/\n'
+      '    - assets/theme/\n',
+      );
+      // Remove duplicate uses-material-design if any
+      final lines = content.split('\n');
+      final seen = <String>{};
+      final filtered = <String>[];
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (trimmed == 'uses-material-design: true') {
+          if (seen.contains(trimmed)) continue;
+          seen.add(trimmed);
         }
-        result.add('  assets:');
-        result.add('    - assets/medias/icons/');
-        result.add('    - assets/medias/animations/');
-        result.add('    - assets/theme/');
-        flutterAssetsAdded = true;
+        filtered.add(line);
       }
+      content = filtered.join('\n');
     }
 
-    // Fallback: if depsInsertIndex is still null, append at end
-    if (depsInsertIndex == null) {
-      result.add('');
-      result.add(additionalDeps.join('\n'));
-    }
-    if (devDepsInsertIndex == null) {
-      result.add('');
-      result.add(additionalDevDeps.join('\n'));
-    }
-
-    pubspecFile.writeAsStringSync(result.join('\n'));
+    pubspecFile.writeAsStringSync(content);
     CliUI.success('pubspec.yaml mis a jour');
   }
 
@@ -440,42 +410,11 @@ class InitCommand extends Command {
 
     gitignore.writeAsStringSync(
       '$content'
-      '\n'
-      '# CSCM\n'
-      '.env\n'
-      '.cscm-features.yaml\n',
+    '\n'
+    '# CSCM\n'
+    '.env\n'
+    '.cscm-features.yaml\n',
     );
-  }
-
-  /// Copy a bundled asset file from the cscm package into the project.
-  void _copyAssetFile(String relativePath, String projectDir) {
-    final sourcePath = _resolveAssetPath(relativePath);
-    if (sourcePath == null) return;
-    final destPath = '$projectDir/$relativePath';
-    File(sourcePath).copySync(destPath);
-    CliUI.fileCreated(relativePath.split('/').last);
-  }
-
-  /// Resolve the path to a bundled asset inside the cscm package.
-  String? _resolveAssetPath(String relativePath) {
-    // Try to find the asset relative to the running cscm script
-    final candidates = ['lib/$relativePath', '../lib/$relativePath'];
-    for (final c in candidates) {
-      if (File(c).existsSync()) return c;
-    }
-    // When installed globally, look in pub cache
-    final home = Platform.environment['HOME'];
-    if (home != null) {
-      final globalPaths = [
-        '$home/.dart_tool/pub/global_packages/clean_solid_cli_mobile/lib/$relativePath',
-        '$home/.pub-cache/global_packages/clean_solid_cli_mobile/lib/$relativePath',
-      ];
-      for (final p in globalPaths) {
-        if (File(p).existsSync()) return p;
-      }
-    }
-    CliUI.warning('Asset non trouve: $relativePath');
-    return null;
   }
 
   void _writeFile(String path, String content) {
@@ -484,35 +423,41 @@ class InitCommand extends Command {
     CliUI.fileCreated(path.split('/').last);
   }
 
-  void _createProjectState(String projectPath, String name, String backend) {
+  void _createProjectState(
+    String projectPath,
+    String name,
+    String backend,
+  ) {
     final stateFile = File('$projectPath/${ProjectState.stateFileName}');
     if (stateFile.existsSync()) {
       stateFile.deleteSync();
     }
 
+    // Use ProjectState.create which writes the file properly
+    // But we need to temporarily cd or pass path
+    // Instead, write directly
+    final comment =
+    '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
+    '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
     final now = DateTime.now().toUtc().toIso8601String();
-    final yaml =
-        '''# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main
-# Ce fichier suit l\'historique des actions cscm sur le projet.
-
-version: 1
-project_name: $name
-created_at: "$now"
-backend: $backend
-features: []
-auth:
-  configured: false
-  configured_at: ""
-  email: false
-  social: false
-  files_created: []
-actions:
-  - timestamp: "$now"
+    final yaml = '''version: 1
+    project_name: $name
+    created_at: "$now"
+    backend: $backend
+    features: []
+    auth:
+    configured: false
+    configured_at: ""
+    email: false
+    social: false
+    files_created: []
+    actions:
+    - timestamp: "$now"
     command: init
     args:
-      - $name
-''';
-    stateFile.writeAsStringSync(yaml);
+    - $name
+    ''';
+    stateFile.writeAsStringSync(comment + yaml);
   }
 
   // ═══════════════════════════════════════════════════
@@ -526,7 +471,7 @@ actions:
 }
 ''';
 
-  String _supabaseConstants() => '''
+String _supabaseConstants() => '''
 class SupabaseApiConstants {
 //  Renseignez vos cles dans le fichier .env
 static const String apiUrl = String.fromEnvironment(
@@ -540,173 +485,103 @@ static const String apiUrl = String.fromEnvironment(
 }
 ''';
 
-  String _themeConst(String name) => r'''
-  import 'dart:convert';
-  import 'package:flutter/material.dart';
-  import 'package:flutter/services.dart';
-
-  class ThemeConst {
-  static const String currentFontFamily = 'Roboto';
-
-  static Future<void> initTheme() async {
-  final lightJson = await rootBundle.loadString(
-    'assets/theme/light_theme.json',
-    );
-    final darkJson = await rootBundle.loadString(
-      'assets/theme/dark_theme.json',
-      );
-
-      // Remplacement de la méthode manquante par notre fonction personnalisée
-      lightTheme = _buildThemeFromJson(
-        json.decode(lightJson) as Map<String, dynamic>,
-        Brightness.light,
-        );
-        darkTheme = _buildThemeFromJson(
-          json.decode(darkJson) as Map<String, dynamic>,
-          Brightness.dark,
-          );
-}
-
-// Fonction magique pour transformer le JSON en ThemeData
-static ThemeData _buildThemeFromJson(Map<String, dynamic> json, Brightness brightness) {
-// Fonction utilitaire pour convertir une chaîne "#HEX" ou "0xFF" en Color Flutter
-Color parseColor(String? hexString) {
-if (hexString == null) return Colors.blue; // Couleur par défaut si absente
-final cleanHex = hexString.replaceAll('#', '').replaceAll('0x', '');
-if (cleanHex.length == 6) {
-  return Color(int.parse('FF$cleanHex', radix: 16)); // Ajoute l'opacité FF (100%) ------
-}
-return Color(int.parse(cleanHex, radix: 16));
-}
-
-return ThemeData(
-  brightness: brightness,
-  fontFamily: currentFontFamily,
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: parseColor(json['primary'] as String?),
-    brightness: brightness,
-    primary: parseColor(json['primary'] as String?),
-    surface: parseColor(json['surface'] as String?),
-    ),
-    );
-}
-}
-
-late ThemeData lightTheme;
-late ThemeData darkTheme;
-''';
-
-  String _textStyles(String name) => '''
-import 'package:$name/config/theme/theme_const.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-
-class TextStyles {
-static TextStyle titleLarge({
-required BuildContext context,
-Color? color,
-double? fontSize,
-FontWeight? fontWeight,
-}) => TextStyle(
-  decoration: TextDecoration.none,
-  color: color ?? Theme.of(context).colorScheme.onSurface,
-  fontSize: (fontSize ?? 22.0).sp,
-  fontWeight: fontWeight ?? FontWeight.w900,
-  fontFamily: ThemeConst.currentFontFamily,
-  );
-
-  static TextStyle titleMedium({
-  required BuildContext context,
-  Color? color,
-  double? fontSize,
-}) => TextStyle(
-  decoration: TextDecoration.none,
-  color: color ?? Theme.of(context).colorScheme.onSurface,
-  fontSize: (fontSize ?? 18.0).sp,
-  fontWeight: FontWeight.w600,
-  fontFamily: ThemeConst.currentFontFamily,
-  );
-
-  static TextStyle titleSmall({
-  required BuildContext context,
-  Color? color,
-  double? fontSize,
-  FontWeight? fontWeight,
-}) => TextStyle(
-  decoration: TextDecoration.none,
-  color: color ?? Theme.of(context).colorScheme.onSurface,
-  fontSize: (fontSize ?? 16.0).sp,
-  fontWeight: fontWeight ?? FontWeight.w500,
-  fontFamily: ThemeConst.currentFontFamily,
-  );
-
-  static TextStyle bodyText({
-  required BuildContext context,
-  Color? color,
-  double? fontSize,
-  FontWeight? fontWeight,
-}) => TextStyle(
-  decoration: TextDecoration.none,
-  color: (color ?? Theme.of(context).colorScheme.onSurface),
-  fontSize: (fontSize ?? 14.0).sp,
-  fontWeight: fontWeight ?? FontWeight.normal,
-  fontFamily: ThemeConst.currentFontFamily,
-  );
-
-  static TextStyle bodyMedium({
-  required BuildContext context,
-  Color? color,
-  double? fontSize,
-  FontWeight? fontWeight,
-}) => TextStyle(
-  decoration: TextDecoration.none,
-  color: (color ?? Theme.of(context).colorScheme.onSurface),
-  fontSize: (fontSize ?? 12.0).sp,
-  fontWeight: fontWeight ?? FontWeight.w600,
-  fontFamily: ThemeConst.currentFontFamily,
-  );
-
-  static TextStyle bodySmall({
-  required BuildContext context,
-  Color? color,
-  double? fontSize,
-  FontWeight? fontWeight,
-}) => TextStyle(
-  decoration: TextDecoration.none,
-  color: (color ?? Theme.of(context).colorScheme.onSurface).withValues(
-    alpha: 0.9,
-    ),
-    fontSize: (fontSize ?? 10.0).sp,
-    fontWeight: fontWeight ?? FontWeight.w400,
-    fontFamily: ThemeConst.currentFontFamily,
-    );
-
-    static TextStyle buttonText({
-    required BuildContext context,
-    Color? color,
-    double? fontSize,
-}) => TextStyle(
-  decoration: TextDecoration.none,
-  color: color ?? Theme.of(context).colorScheme.onSurface,
-  fontSize: (fontSize ?? 12.0).sp,
-  fontWeight: FontWeight.w700,
-  fontFamily: ThemeConst.currentFontFamily,
-  );
-}
-''';
-
-  String _themeProvider(String name) => '''
-import 'package:$name/core/services/storage_service.dart';
+String _themeProvider(String name) => '''
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:$name/core/services/storage_service.dart';
 
 final themeModeProvider = StateProvider<ThemeMode>((ref) {
 final storage = ref.watch(storageServiceProvider);
-return storage.isThemeDark() ? ThemeMode.dark : ThemeMode.light;
+final mode = storage.getThemeMode();
+switch (mode) {
+  case 'light':
+    return ThemeMode.light;
+  case 'dark':
+    return ThemeMode.dark;
+  default:
+    return ThemeMode.system;
+}
 });
 ''';
 
-  String _appAction() => '''
+String _themeConst() => '''
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class ThemeConst {
+static ThemeData? _lightTheme;
+static ThemeData? _darkTheme;
+
+static ThemeData get lightTheme => _lightTheme ?? ThemeData.light(useMaterial3: true);
+static ThemeData get darkTheme => _darkTheme ?? ThemeData.dark(useMaterial3: true);
+
+static Future<void> initTheme() async {
+try {
+final jsonStr = await rootBundle.loadString('assets/theme/app_theme.json');
+final data = json.decode(jsonStr) as Map<String, dynamic>;
+if (data.containsKey('light')) {
+  _lightTheme = _parseTheme(data['light'] as Map<String, dynamic>, Brightness.light);
+}
+if (data.containsKey('dark')) {
+  _darkTheme = _parseTheme(data['dark'] as Map<String, dynamic>, Brightness.dark);
+}
+} catch (_) {
+// Fallback sur les themes par defaut
+_lightTheme = ThemeData.light(useMaterial3: true);
+_darkTheme = ThemeData.dark(useMaterial3: true);
+}
+}
+
+static ThemeData _parseTheme(Map<String, dynamic> data, Brightness brightness) {
+final seed = data['seedColor'] as String?;
+return ThemeData(
+  useMaterial3: true,
+  brightness: brightness,
+  colorSchemeSeed: seed != null ? _parseColor(seed) : null,
+  );
+}
+
+static Color _parseColor(String hex) {
+final hexCode = hex.replaceAll('#', '');
+return Color(int.parse('FF' + hexCode, radix: 16));
+}
+}
+''';
+
+String _storageService() => '''
+import 'package:riverpod/riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class StorageService {
+final SharedPreferences _prefs;
+StorageService(this._prefs);
+
+// Theme
+String getThemeMode() => _prefs.getString('theme_mode') ?? 'system';
+Future<bool> setThemeMode(String mode) => _prefs.setString('theme_mode', mode);
+
+// Token
+String? getToken() => _prefs.getString('auth_token');
+Future<bool> setToken(String token) => _prefs.setString('auth_token', token);
+Future<bool> removeToken() => _prefs.remove('auth_token');
+
+// Generic
+String? get(String key) => _prefs.getString(key);
+Future<bool> set(String key, String value) => _prefs.setString(key, value);
+Future<bool> remove(String key) => _prefs.remove(key);
+bool containsKey(String key) => _prefs.containsKey(key);
+}
+
+final storageServiceProvider = Provider<StorageService>((ref) {
+throw UnimplementedError(
+  'storageServiceProvider doit etre surcharge dans ProviderScope. '
+  'Voir main.dart : overrides: [storageServiceProvider.overrideWithValue(...)]',
+  );
+});
+''';
+
+String _appAction() => '''
 /// Interface de base pour toutes les actions de l'application.
 /// Chaque action porte un message de succes, d'erreur,
 /// et indique s'il s'agit d'une action d'ecriture.
@@ -717,61 +592,40 @@ bool get isWriteAction;
 }
 ''';
 
-  String _storageService() => '''
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+String _injectionContainer(String name, String backend) {
+  final hasSupabase = backend == 'supabase';
+  return '''
+  import 'package:get_it/get_it.dart';
+  import 'package:shared_preferences/shared_preferences.dart';
+  ${hasSupabase ? "import 'package:supabase_flutter/supabase_flutter.dart';" : ''}
+  import 'package:$name/core/services/storage_service.dart';
+  import 'package:$name/core/network/network_info.dart';
+  import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
-final storageServiceProvider = Provider<StorageService>((ref) {
-throw UnimplementedError();
-});
+  // [IMPORT_ANCHOR]
 
-class StorageService {
-final SharedPreferences _prefs;
-StorageService(this._prefs);
+  final sl = GetIt.instance;
 
-static const String _onboardingKey = 'has_seen_onboarding';
-static const String _uiThemeKey = 'uiTheme';
+  Future<void> init({SharedPreferences? sharedPreferences}) async {
+  // ── Core services ──
+  final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
+  sl.registerLazySingleton<SharedPreferences>(() => prefs);
+  sl.registerLazySingleton<StorageService>(() => StorageService(prefs));
+  ${hasSupabase ? "\n  // ── Supabase ──\n  sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);" : ''}
 
-Future<void> setOnboardingSeen() async {
-await _prefs.setBool(_onboardingKey, true);
-}
+  // ── Network ──
+  sl.registerLazySingleton(() => InternetConnection());
+  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
 
-bool hasSeenOnboarding() {
-return _prefs.getBool(_onboardingKey) ?? false;
-}
 
-Future<void> setTheme(String themeName) async {
-await _prefs.setString(_uiThemeKey, themeName);
-}
-
-bool isThemeDark() {
-final theme = _prefs.getString(_uiThemeKey);
-return theme == 'darkTheme';
-}
-}
-''';
-
-  String _injectionContainer(String name) => '''
-import 'package:get_it/get_it.dart';
-import 'package:$name/core/services/storage_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// [IMPORT_ANCHOR]
-
-final sl = GetIt.instance;
-
-Future<void> init() async {
-// Initialisation des services core
-final prefs = await SharedPreferences.getInstance();
-sl.registerSingleton<StorageService>(StorageService(prefs));
-
-// [INIT_ANCHOR]
+  // [INIT_ANCHOR]
 }
 
 // [INIT_METHOD_ANCHOR]
 ''';
+}
 
-  String _exceptions() => '''
+String _exceptions() => '''
 /// Exceptions serveur (API, base de donnees)
 class ServerException implements Exception {
 final String message;
@@ -812,7 +666,7 @@ const UnexpectedException({required this.message});
 }
 ''';
 
-  String _failures() => '''
+String _failures() => '''
 import 'package:equatable/equatable.dart';
 
 abstract class Failure extends Equatable {
@@ -856,7 +710,7 @@ const UnexpectedFailure({required super.message, super.code});
 }
 ''';
 
-  String _errorManager() => '''
+String _errorManager() => '''
 import '../error/failures.dart';
 
 /// Mappe les failures en messages comprehensibles par l'utilisateur.
@@ -894,7 +748,7 @@ return failure.message.isNotEmpty ? failure.message : 'Une erreur est survenue.'
 }
 ''';
 
-  String _networkInfo() => '''
+String _networkInfo() => '''
 import 'dart:async';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
@@ -916,7 +770,7 @@ Stream<bool> get onStatusChange => _connectionChecker.onStatusChange.map((s) => 
 }
 ''';
 
-  String _appRouter(String name) => '''
+String _appRouter(String name) => '''
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -938,7 +792,7 @@ return GoRouter(
 });
 ''';
 
-  String _typedefs(String name) => '''
+String _typedefs(String name) => '''
 import 'package:dartz/dartz.dart';
 import 'package:$name/core/error/failures.dart';
 
@@ -947,7 +801,7 @@ typedef ResultVoid = Future<Either<Failure, void>>;
 typedef MapData = Map<String, dynamic>;
 ''';
 
-  String _successErrorListener(String name) => '''
+String _successErrorListener(String name) => '''
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:$name/core/error/failures.dart';
@@ -996,13 +850,13 @@ return child;
 }
 ''';
 
-  String _lastNetworkTimeProvider() => '''
+String _lastNetworkTimeProvider() => '''
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final lastNetworkErrorTimeProvider = StateProvider<DateTime?>((ref) => null);
 ''';
 
-  String _showToast() => '''
+String _showToast() => '''
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 
@@ -1024,7 +878,7 @@ toastification.show(
 }
 ''';
 
-  String _snackbar() => '''
+String _snackbar() => '''
 import 'package:flutter/material.dart';
 
 class Snackbar {
@@ -1055,7 +909,7 @@ ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }
 ''';
 
-  String _loadingWidget() => '''
+String _loadingWidget() => '''
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
@@ -1088,28 +942,49 @@ return Center(
 }
 ''';
 
-  String _main(String name, String backend) {
-    final hasSupabase = backend == 'supabase';
-    return '''
+String _main(String name, String backend) {
+  final hasSupabase = backend == 'supabase';
+  return '''
   import 'package:flutter/material.dart';
   import 'package:flutter_riverpod/flutter_riverpod.dart';
   import 'package:flutter_screenutil/flutter_screenutil.dart';
+  import 'package:shared_preferences/shared_preferences.dart';
   import 'package:$name/config/constants/app_const.dart';
-  import 'package:$name/config/constants/supabase_api_constants.dart';
+  ${hasSupabase ? "import 'package:$name/config/constants/supabase_api_constants.dart';" : ''}
   import 'package:$name/config/theme/theme_provider.dart';
   import 'package:$name/config/theme/theme_const.dart';
   import 'package:$name/core/router/app_router.dart';
-  import 'package:$name/core/di/injection_container.dart' as di;${hasSupabase ? "\nimport 'package:supabase_flutter/supabase_flutter.dart';" : ''}
+  import 'package:$name/core/di/injection_container.dart' as di;
+  import 'package:$name/core/services/storage_service.dart';
+  ${hasSupabase ? "import 'package:supabase_flutter/supabase_flutter.dart';" : ''}
   import 'package:toastification/toastification.dart';
 
   Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  ${hasSupabase ? "\n  await Supabase.initialize(\n    url: SupabaseApiConstants.apiUrl,\n    anonKey: SupabaseApiConstants.apiKey,\n    authOptions: const FlutterAuthClientOptions(\n      autoRefreshToken: true,\n      detectSessionInUri: true,\n    ),\n  );" : ""}
+  ${hasSupabase ? """
+  await Supabase.initialize(
+    url: SupabaseApiConstants.apiUrl,
+    anonKey: SupabaseApiConstants.apiKey,
+    authOptions: const FlutterAuthClientOptions(
+      autoRefreshToken: true,
+      detectSessionInUri: true,
+    ),
+  );""" : ''}
 
+  final sharedPreferences = await SharedPreferences.getInstance();
   await ThemeConst.initTheme();
-  await di.init();
+  await di.init(sharedPreferences: sharedPreferences);
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    ProviderScope(
+      overrides: [
+      storageServiceProvider.overrideWithValue(
+        StorageService(sharedPreferences),
+        ),
+        ],
+        child: const MyApp(),
+        ),
+        );
 }
 
 class MyApp extends ConsumerWidget {
@@ -1139,9 +1014,9 @@ return ScreenUtilInit(
 }
 }
 ''';
-  }
+}
 
-  String _envTemplate() => '''
+String _envTemplate() => '''
 # ═══════════════════════════════════════
 # Variables d'environnement
 # ====== :( Ne jamais commiter ce fichier avec de vraies cles !
@@ -1151,7 +1026,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key-here
 ''';
 
-  String _analysisOptions() => '''
+String _analysisOptions() => '''
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
