@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+// ═══════════════════════════════════════════════════
+// ROUTES
+// ═══════════════════════════════════════════════════
+
+// /// Page d'accueil
+// final _homeShell = GoRoute(
+//   path: '/',
+//   builder: (context, state) => const HomePage(),
+// );
+
+// ═══════════════════════════════════════════════════
+// ROUTER
+// ═══════════════════════════════════════════════════
+
+final goRouter = GoRouter(
+  initialLocation: '/',
+  debugLogDiagnostics: true,
+  routes: [
+    // _homeShell,
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const _PlaceholderPage(),
+    ),
+  ],
+  errorBuilder: (context, state) => Scaffold(
+    body: Center(
+      child: Text('Page non trouvée: ${state.uri.path}'),
+    ),
+  ),
+);
+
+/// Page temporaire en attendant la première feature.
+class _PlaceholderPage extends StatelessWidget {
+  const _PlaceholderPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('{{Name}}')),
+      body: const Center(
+        child: Text('Bienvenue ! Créez votre première feature avec\n"
+cscm create ma_feature -i "nom:string"'),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}

@@ -7,6 +7,7 @@ import 'package:clean_solid_cli_mobile/utils/config_reader.dart';
 import 'package:clean_solid_cli_mobile/utils/reformate_class_name.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
+import 'package:clean_solid_cli_mobile/utils/template_resolver.dart';
 
 class InitCommand extends Command {
   @override
@@ -138,12 +139,9 @@ class InitCommand extends Command {
 
         if (GitHelper.isGitInstalled()) {
           if (!GitHelper.isGitRepo()) {
-            // cd into the created project, init git, then cd back
-            // We init in the project directory
             if (GitHelper.initRepo(directory: projectDir)) {
               CliUI.success('git init');
 
-              // Initial commit
               final commitResult = GitHelper.commit(
                 message: 'init: cscm project $snakeName with clean architecture',
                 directory: projectDir,
@@ -181,6 +179,10 @@ class InitCommand extends Command {
   Future<void> _createProjectStructure(String name, String backend) async {
     final projectDir = Directory(name);
     final libDir = '${projectDir.path}/lib';
+    final hasSupabase = backend == 'supabase';
+    final pascalName = ReformateClassName.capitalizeClassName(
+      featureName: name,
+    );
 
     // --- DIRECTORIES ---
     final directories = [
@@ -211,64 +213,53 @@ class InitCommand extends Command {
     }
 
     // --- CONFIG FILES ---
-    _writeFile('$libDir/config/constants/app_const.dart', _appConst(name));
-    _writeFile(
-      '$libDir/config/constants/supabase_api_constants.dart',
-      _supabaseConstants(),
-    );
-    _writeFile(
-      '$libDir/config/theme/theme_provider.dart',
-      _themeProvider(name),
-    );
-    _writeFile(
-      '$libDir/config/theme/theme_const.dart',
-      _themeConst(),
-    );
+    await _writeTpl('$libDir/config/constants/app_const.dart',
+                    'app_const', {'Name': pascalName});
+    await _writeTpl('$libDir/config/constants/supabase_api_constants.dart',
+                    'supabase_api_constants');
+    await _writeTpl('$libDir/config/theme/theme_provider.dart',
+                    'theme_provider', {'name': name});
+    await _writeTpl('$libDir/config/theme/theme_const.dart', 'theme_const');
 
     // --- CORE ---
-    _writeFile(
-      '$libDir/core/services/storage_service.dart',
-      _storageService(),
-    );
-    _writeFile('$libDir/core/actions/app_action.dart', _appAction());
-    _writeFile(
+    await _writeTpl('$libDir/core/services/storage_service.dart', 'storage_service');
+    await _writeTpl('$libDir/core/actions/app_action.dart', 'app_action');
+    await _writeTpl(
       '$libDir/core/di/injection_container.dart',
-      _injectionContainer(name, backend),
-    );
-    _writeFile('$libDir/core/error/exceptions.dart', _exceptions());
-    _writeFile('$libDir/core/error/failures.dart', _failures());
-    _writeFile('$libDir/core/error/error_manager.dart', _errorManager());
-    _writeFile('$libDir/core/network/network_info.dart', _networkInfo());
-    _writeFile('$libDir/core/router/app_router.dart', _appRouter(name));
-    _writeFile('$libDir/core/utils/typedefs.dart', _typedefs(name));
+      'injection_container',
+      {'name': name},
+      conditionals: {'supabase': hasSupabase});
+    await _writeTpl('$libDir/core/error/exceptions.dart', 'exceptions');
+    await _writeTpl('$libDir/core/error/failures.dart', 'failures');
+    await _writeTpl('$libDir/core/error/error_manager.dart', 'error_manager');
+    await _writeTpl('$libDir/core/network/network_info.dart', 'network_info');
+    await _writeTpl('$libDir/core/router/app_router.dart', 'app_router');
+    await _writeTpl('$libDir/core/utils/typedefs.dart', 'typedefs', {'name': name});
 
     // --- ERROR LISTENER ---
-    _writeFile(
+    await _writeTpl(
       '$libDir/core/mainErrorListener/success_error_listener.dart',
-      _successErrorListener(name),
-    );
-    _writeFile(
+      'success_error_listener',
+      {'name': name});
+    await _writeTpl(
       '$libDir/core/mainErrorListener/last_network_time_provider.dart',
-      _lastNetworkTimeProvider(),
-    );
+      'last_network_time_provider');
 
     // --- SHARED WIDGETS ---
-    _writeFile('$libDir/shared/widgets/popup/show_toast.dart', _showToast());
-    _writeFile('$libDir/shared/widgets/popup/snackbar.dart', _snackbar());
-    _writeFile(
-      '$libDir/shared/widgets/loading/loading_widget.dart',
-      _loadingWidget(),
-    );
+    await _writeTpl('$libDir/shared/widgets/popup/show_toast.dart', 'show_toast');
+    await _writeTpl('$libDir/shared/widgets/popup/snackbar.dart', 'snackbar');
+    await _writeTpl('$libDir/shared/widgets/loading/loading_widget.dart', 'loading_widget');
 
     // --- MAIN ---
-    _writeFile('$libDir/main.dart', _main(name, backend));
+    await _writeTpl('$libDir/main.dart', 'main', {'name': name},
+                    conditionals: {'supabase': hasSupabase});
 
     // --- MERGE DEPENDENCIES INTO EXISTING pubspec.yaml ---
     _mergePubspecDependencies(name, backend, projectDir.path);
 
     // --- ASSETS & MISC ---
-    _writeFile('${projectDir.path}/.env', _envTemplate());
-    _writeFile('${projectDir.path}/analysis_options.yaml', _analysisOptions());
+    await _writeTpl('${projectDir.path}/.env', 'env_template');
+    await _writeTpl('${projectDir.path}/analysis_options.yaml', 'analysis_options');
 
     // .gitignore already created by flutter create, append our additions
     _appendGitignore(projectDir.path);
@@ -433,9 +424,6 @@ class InitCommand extends Command {
       stateFile.deleteSync();
     }
 
-    // Use ProjectState.create which writes the file properly
-    // But we need to temporarily cd or pass path
-    // Instead, write directly
     final comment =
     '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
     '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
@@ -461,611 +449,71 @@ class InitCommand extends Command {
   }
 
   // ═══════════════════════════════════════════════════
-  // TEMPLATES
+  // TEMPLATE LOADER
   // ═══════════════════════════════════════════════════
 
-  String _appConst(String name) => '''
-  class AppConst {
-  static const String appName = "${ReformateClassName.capitalizeClassName(featureName: name)}";
-  static const String appVersion = "1.0.0";
-}
-''';
-
-String _supabaseConstants() => '''
-class SupabaseApiConstants {
-//  Renseignez vos cles dans le fichier .env
-static const String apiUrl = String.fromEnvironment(
-  'SUPABASE_URL',
-  defaultValue: '',
-    );
-    static const String apiKey = String.fromEnvironment(
-      'SUPABASE_ANON_KEY',
-      defaultValue: '',
-        );
-}
-''';
-
-String _themeProvider(String name) => '''
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:$name/core/services/storage_service.dart';
-
-final themeModeProvider = StateProvider<ThemeMode>((ref) {
-final storage = ref.watch(storageServiceProvider);
-final mode = storage.getThemeMode();
-switch (mode) {
-  case 'light':
-    return ThemeMode.light;
-  case 'dark':
-    return ThemeMode.dark;
-  default:
-    return ThemeMode.system;
-}
-});
-''';
-
-String _themeConst() => '''
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-class ThemeConst {
-static ThemeData? _lightTheme;
-static ThemeData? _darkTheme;
-
-static ThemeData get lightTheme => _lightTheme ?? ThemeData.light(useMaterial3: true);
-static ThemeData get darkTheme => _darkTheme ?? ThemeData.dark(useMaterial3: true);
-
-static Future<void> initTheme() async {
-try {
-final jsonStr = await rootBundle.loadString('assets/theme/app_theme.json');
-final data = json.decode(jsonStr) as Map<String, dynamic>;
-if (data.containsKey('light')) {
-  _lightTheme = _parseTheme(data['light'] as Map<String, dynamic>, Brightness.light);
-}
-if (data.containsKey('dark')) {
-  _darkTheme = _parseTheme(data['dark'] as Map<String, dynamic>, Brightness.dark);
-}
-} catch (_) {
-// Fallback sur les themes par defaut
-_lightTheme = ThemeData.light(useMaterial3: true);
-_darkTheme = ThemeData.dark(useMaterial3: true);
-}
-}
-
-static ThemeData _parseTheme(Map<String, dynamic> data, Brightness brightness) {
-final seed = data['seedColor'] as String?;
-return ThemeData(
-  useMaterial3: true,
-  brightness: brightness,
-  colorSchemeSeed: seed != null ? _parseColor(seed) : null,
-  );
-}
-
-static Color _parseColor(String hex) {
-final hexCode = hex.replaceAll('#', '');
-return Color(int.parse('FF' + hexCode, radix: 16));
-}
-}
-''';
-
-String _storageService() => '''
-import 'package:riverpod/riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class StorageService {
-final SharedPreferences _prefs;
-StorageService(this._prefs);
-
-// Theme
-String getThemeMode() => _prefs.getString('theme_mode') ?? 'system';
-Future<bool> setThemeMode(String mode) => _prefs.setString('theme_mode', mode);
-
-// Token
-String? getToken() => _prefs.getString('auth_token');
-Future<bool> setToken(String token) => _prefs.setString('auth_token', token);
-Future<bool> removeToken() => _prefs.remove('auth_token');
-
-// Generic
-String? get(String key) => _prefs.getString(key);
-Future<bool> set(String key, String value) => _prefs.setString(key, value);
-Future<bool> remove(String key) => _prefs.remove(key);
-bool containsKey(String key) => _prefs.containsKey(key);
-}
-
-final storageServiceProvider = Provider<StorageService>((ref) {
-throw UnimplementedError(
-  'storageServiceProvider doit etre surcharge dans ProviderScope. '
-  'Voir main.dart : overrides: [storageServiceProvider.overrideWithValue(...)]',
-  );
-});
-''';
-
-String _appAction() => '''
-/// Interface de base pour toutes les actions de l'application.
-/// Chaque action porte un message de succes, d'erreur,
-/// et indique s'il s'agit d'une action d'ecriture.
-abstract class AppAction {
-String get successMessage;
-String get errorMessage;
-bool get isWriteAction;
-}
-''';
-
-String _injectionContainer(String name, String backend) {
-  final hasSupabase = backend == 'supabase';
-  return '''
-  import 'package:get_it/get_it.dart';
-  import 'package:shared_preferences/shared_preferences.dart';
-  ${hasSupabase ? "import 'package:supabase_flutter/supabase_flutter.dart';" : ''}
-  import 'package:$name/core/services/storage_service.dart';
-  import 'package:$name/core/network/network_info.dart';
-  import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
-
-  // [IMPORT_ANCHOR]
-
-  final sl = GetIt.instance;
-
-  Future<void> init({SharedPreferences? sharedPreferences}) async {
-  // ── Core services ──
-  final prefs = sharedPreferences ?? await SharedPreferences.getInstance();
-  sl.registerLazySingleton<SharedPreferences>(() => prefs);
-  sl.registerLazySingleton<StorageService>(() => StorageService(prefs));
-  ${hasSupabase ? "\n  // ── Supabase ──\n  sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);" : ''}
-
-  // ── Network ──
-  sl.registerLazySingleton(() => InternetConnection());
-  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
-
-
-  // [INIT_ANCHOR]
-}
-
-// [INIT_METHOD_ANCHOR]
-''';
-}
-
-String _exceptions() => '''
-/// Exceptions serveur (API, base de donnees)
-class ServerException implements Exception {
-final String message;
-final String? code;
-const ServerException({required this.message, this.code});
-}
-
-/// Erreur specifique a l'API REST
-class ApiException implements Exception {
-final String message;
-final String? code;
-const ApiException({required this.message, this.code});
-}
-
-/// Erreur d'authentification utilisateur
-class AuthUserException implements Exception {
-final String message;
-final String? code;
-const AuthUserException({required this.message, this.code});
-}
-
-/// Erreur reseau (pas de connexion)
-class NetworkException implements Exception {
-final String message;
-const NetworkException({required this.message});
-}
-
-/// Erreur de cache locale
-class CacheException implements Exception {
-final String message;
-const CacheException({required this.message});
-}
-
-/// Erreur inattendue (catch-all)
-class UnexpectedException implements Exception {
-final String message;
-const UnexpectedException({required this.message});
-}
-''';
-
-String _failures() => '''
-import 'package:equatable/equatable.dart';
-
-abstract class Failure extends Equatable {
-final String message;
-final String? code;
-const Failure({required this.message, this.code});
-
-@override
-List<Object?> get props => [message, code];
-}
-
-class ServerFailure extends Failure {
-const ServerFailure({required super.message, super.code});
-}
-
-class ApiFailure extends Failure {
-const ApiFailure({required super.message, super.code});
-
-factory ApiFailure.fromException(dynamic exception) {
-return ApiFailure(
-  message: exception.message as String? ?? 'Erreur API inconnue',
-  code: exception.code as String?,
-  );
-}
-}
-
-class AuthFailure extends Failure {
-const AuthFailure({required super.message, super.code});
-}
-
-class NetworkFailure extends Failure {
-const NetworkFailure({required super.message, super.code});
-}
-
-class CacheFailure extends Failure {
-const CacheFailure({required super.message, super.code});
-}
-
-class UnexpectedFailure extends Failure {
-const UnexpectedFailure({required super.message, super.code});
-}
-''';
-
-String _errorManager() => '''
-import '../error/failures.dart';
-
-/// Mappe les failures en messages comprehensibles par l'utilisateur.
-class SuccessErrorManager {
-static String getFriendlyErrorMessage(Failure failure, dynamic action) {
-// Messages specifiques par code d'erreur
-switch (failure.code) {
-  case '23505':
-    return 'Cet element existe deja.';
-  case '23503':
-    return 'Impossible de supprimer : reference par un autre element.';
-  case 'PGRST116':
-    return 'Aucune donnee trouvee.';
-  case '42P01':
-    return 'Ressource introuvable.';
-  case 'Network_01':
-    return 'Pas de connexion Internet.';
-}
-
-// Message personnalise de l'action si disponible
-if (action != null && action.errorMessage != null) {
-  return action.errorMessage as String;
-}
-
-// Messages generiques par type de failure
-if (failure is NetworkFailure) {
-  return 'Verifiez votre connexion Internet.';
-}
-if (failure is AuthFailure) {
-  return "Erreur d'authentification. Veuillez vous reconnecter.";
-}
-
-return failure.message.isNotEmpty ? failure.message : 'Une erreur est survenue.';
-}
-}
-''';
-
-String _networkInfo() => '''
-import 'dart:async';
-import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
-
-abstract class NetworkInfo {
-Future<bool> get isConnected;
-Stream<bool> get onStatusChange;
-}
-
-class NetworkInfoImpl implements NetworkInfo {
-final InternetConnection _connectionChecker;
-
-NetworkInfoImpl(this._connectionChecker);
-
-@override
-Future<bool> get isConnected => _connectionChecker.hasInternetAccess;
-
-@override
-Stream<bool> get onStatusChange => _connectionChecker.onStatusChange.map((s) => s == InternetStatus.connected);
-}
-''';
-
-String _appRouter(String name) => '''
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final appRouterProvider = Provider<GoRouter>((ref) {
-return GoRouter(
-  initialLocation: '/',
-  debugLogDiagnostics: true,
-  routes: [
-  // Ajoutez vos routes ici
-  // [ROUTES_ANCHOR]
-  ],
-  errorBuilder: (context, state) => Scaffold(
-    body: Center(
-      child: Text('Page non trouvee : \${state.uri.path}'),
-      ),
-      ),
-      );
-});
-''';
-
-String _typedefs(String name) => '''
-import 'package:dartz/dartz.dart';
-import 'package:$name/core/error/failures.dart';
-
-typedef ResultFuture<T> = Future<Either<Failure, T>>;
-typedef ResultVoid = Future<Either<Failure, void>>;
-typedef MapData = Map<String, dynamic>;
-''';
-
-String _successErrorListener(String name) => '''
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:$name/core/error/failures.dart';
-import 'package:$name/core/error/error_manager.dart';
-import 'package:$name/shared/widgets/popup/show_toast.dart';
-import 'package:$name/shared/widgets/popup/snackbar.dart';
-import 'package:$name/core/mainErrorListener/last_network_time_provider.dart';
-
-class SuccessErrorListener extends ConsumerWidget {
-final Widget child;
-const SuccessErrorListener({super.key, required this.child});
-
-@override
-Widget build(BuildContext context, WidgetRef ref) {
-void _showFilteredError({
-required BuildContext context,
-required WidgetRef ref,
-required Failure failure,
-required dynamic action,
-required String title,
-}) {
-final now = DateTime.now();
-final lastErrorTime = ref.read(lastNetworkErrorTimeProvider);
-final isNetworkError =
-failure is NetworkFailure || failure.code == 'Network_01';
-
-if (isNetworkError) {
-  if (lastErrorTime == null ||
-    now.difference(lastErrorTime).inSeconds > 3) {
-    ref.read(lastNetworkErrorTimeProvider.notifier).state = now;
-  final msg =
-  SuccessErrorManager.getFriendlyErrorMessage(failure, action);
-  Snackbar.show(context,
-  message: msg, isError: true, isPersistent: true);
-}
-} else {
-  final String msg = action?.errorMessage ?? failure.message;
-  showToast(context,
-  description: msg, isError: true, title: title);
-}
-}
-
-// [LISTENERS_ANCHOR]
-return child;
-}
-}
-''';
-
-String _lastNetworkTimeProvider() => '''
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final lastNetworkErrorTimeProvider = StateProvider<DateTime?>((ref) => null);
-''';
-
-String _showToast() => '''
-import 'package:flutter/material.dart';
-import 'package:toastification/toastification.dart';
-
-void showToast(
-  BuildContext context, {
-  required String description,
-  required bool isError,
-  String? title,
-}) {
-toastification.show(
-  context: context,
-  type: isError ? ToastificationType.error : ToastificationType.success,
-  style: ToastificationStyle.fillColored,
-  title: title != null ? Text(title) : null,
-  description: Text(description),
-  autoCloseDuration: const Duration(seconds: 4),
-  showProgressBar: false,
-  );
-}
-''';
-
-String _snackbar() => '''
-import 'package:flutter/material.dart';
-
-class Snackbar {
-static void show(
-  BuildContext context, {
-  required String message,
-  required bool isError,
-  bool isPersistent = false,
-}) {
-final snackBar = SnackBar(
-  content: Text(message),
-  backgroundColor: isError ? Colors.red : Colors.green,
-  duration: isPersistent
-  ? const Duration(days: 1)
-  : const Duration(seconds: 4),
-  action: isPersistent
-  ? SnackBarAction(
-    label: 'Fermer',
-    textColor: Colors.white,
-    onPressed: () {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-},
-)
-: null,
-);
-ScaffoldMessenger.of(context).showSnackBar(snackBar);
-}
-}
-''';
-
-String _loadingWidget() => '''
-import 'package:flutter/material.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
-
-class LoadingWidget extends StatelessWidget {
-final double? size;
-final String? message;
-const LoadingWidget({super.key, this.size, this.message});
-
-@override
-Widget build(BuildContext context) {
-return Center(
-  child: Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-    LoadingAnimationWidget.fourRotatingDots(
-      color: Theme.of(context).colorScheme.primary,
-      size: size ?? 40,
-      ),
-      if (message != null) ...[
-        const SizedBox(height: 16),
-        Text(
-          message!,
-          style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          ],
-          ],
-          ),
+  /// Read a template from lib/templates/init/{templateName}.txt,
+  /// apply variable replacements and conditional blocks,
+  /// then write to [targetPath].
+  Future<void> _writeTpl(
+    String targetPath,
+    String templateName, {
+      Map<String, String> variables = const {},
+      Map<String, bool> conditionals = const {},
+    }) async {
+      final resolvedPath = await TemplateResolver.resolveInit(templateName);
+      if (resolvedPath == null) {
+        throw CliException('Template init/$templateName.txt introuvable.');
+      }
+
+      String content = File(resolvedPath).readAsStringSync();
+
+      // Apply variable replacements ({{name}}, {{Name}}, etc.)
+      for (final entry in variables.entries) {
+        content = content.replaceAll('{{${entry.key}}}', entry.value);
+      }
+
+      // Process conditional blocks ({{#if var}}...{{/if}})
+      for (final entry in conditionals.entries) {
+        content = _processConditional(content, entry.key, entry.value);
+      }
+
+      _writeFile(targetPath, content);
+    }
+
+    /// Process `{{#if variable}}...{{/if}}` blocks.
+    static String _processConditional(
+      String content,
+      String variable,
+      bool enabled,
+    ) {
+      final startTag = '{{#if $variable}}';
+      final endTag = '{{/if}}';
+
+      while (content.contains(startTag)) {
+        final startIndex = content.indexOf(startTag);
+        final endIndex = content.indexOf(endTag, startIndex);
+
+        if (endIndex == -1) break;
+
+        if (enabled) {
+          final blockContent = content.substring(
+            startIndex + startTag.length,
+            endIndex,
           );
-}
-}
-''';
-
-String _main(String name, String backend) {
-  final hasSupabase = backend == 'supabase';
-  return '''
-  import 'package:flutter/material.dart';
-  import 'package:flutter_riverpod/flutter_riverpod.dart';
-  import 'package:flutter_screenutil/flutter_screenutil.dart';
-  import 'package:shared_preferences/shared_preferences.dart';
-  import 'package:$name/config/constants/app_const.dart';
-  ${hasSupabase ? "import 'package:$name/config/constants/supabase_api_constants.dart';" : ''}
-  import 'package:$name/config/theme/theme_provider.dart';
-  import 'package:$name/config/theme/theme_const.dart';
-  import 'package:$name/core/router/app_router.dart';
-  import 'package:$name/core/di/injection_container.dart' as di;
-  import 'package:$name/core/services/storage_service.dart';
-  ${hasSupabase ? "import 'package:supabase_flutter/supabase_flutter.dart';" : ''}
-  import 'package:toastification/toastification.dart';
-
-  Future main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  ${hasSupabase ? """
-  await Supabase.initialize(
-    url: SupabaseApiConstants.apiUrl,
-    anonKey: SupabaseApiConstants.apiKey,
-    authOptions: const FlutterAuthClientOptions(
-      autoRefreshToken: true,
-      detectSessionInUri: true,
-    ),
-  );""" : ''}
-
-  final sharedPreferences = await SharedPreferences.getInstance();
-  await ThemeConst.initTheme();
-  await di.init(sharedPreferences: sharedPreferences);
-
-  runApp(
-    ProviderScope(
-      overrides: [
-      storageServiceProvider.overrideWithValue(
-        StorageService(sharedPreferences),
-        ),
-        ],
-        child: const MyApp(),
-        ),
-        );
-}
-
-class MyApp extends ConsumerWidget {
-const MyApp({super.key});
-
-@override
-Widget build(BuildContext context, WidgetRef ref) {
-final themeMode = ref.watch(themeModeProvider);
-final router = ref.watch(appRouterProvider);
-
-return ScreenUtilInit(
-  designSize: const Size(390, 844),
-  minTextAdapt: true,
-  builder: (context, child) {
-  return ToastificationWrapper(
-    child: MaterialApp.router(
-      routerConfig: router,
-      theme: lightTheme,
-      darkTheme: darkTheme,
-      themeMode: themeMode,
-      debugShowCheckedModeBanner: false,
-      title: AppConst.appName,
-      ),
-      );
-},
-);
-}
-}
-''';
-}
-
-String _envTemplate() => '''
-# ═══════════════════════════════════════
-# Variables d'environnement
-# ====== :( Ne jamais commiter ce fichier avec de vraies cles !
-# ═══════════════════════════════════════
-
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here
-''';
-
-String _analysisOptions() => '''
-include: package:flutter_lints/flutter.yaml
-
-analyzer:
-language:
-strict-casts: true
-strict-inference: true
-strict-raw-types: true
-exclude:
-- "**/*.g.dart"
-- "**/*.freezed.dart"
-errors:
-invalid_annotation_target: ignore
-
-linter:
-rules:
-prefer_const_constructors: true
-prefer_const_declarations: true
-prefer_const_literals_to_create_immutables: true
-avoid_print: true
-prefer_single_quotes: true
-always_declare_return_types: true
-prefer_final_fields: true
-prefer_final_locals: true
-unnecessary_null_comparison: true
-prefer_null_aware_operators: true
-avoid_unnecessary_containers: true
-avoid_empty_else: true
-prefer_is_empty: true
-prefer_is_not_empty: true
-prefer_is_not_operator: true
-avoid_redundant_argument_values: true
-cancel_subscriptions: true
-close_sinks: true
-use_key_in_widget_constructors: true
-prefer_const_constructors_in_immutables: true
-sized_box_for_whitespace: true
-unnecessary_overrides: true
-unnecessary_this: true
-prefer_typing_uninitialized_variables: true
-require_trailing_commas: true
-''';
+          content = content.replaceRange(
+            startIndex,
+            endIndex + endTag.length,
+            blockContent,
+          );
+        } else {
+          content = content.replaceRange(
+            startIndex,
+            endIndex + endTag.length,
+            '',
+          );
+        }
+      }
+      return content;
+    }
 }

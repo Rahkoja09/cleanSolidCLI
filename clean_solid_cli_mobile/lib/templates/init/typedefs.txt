@@ -1,0 +1,7 @@
+/// Alias de types réutilisables dans tout le projet.
+
+/// Callback générique avec erreur.
+typedef ErrorCallback = void Function(String message);
+
+/// Callback de progression (0.0 à 1.0).
+typedef ProgressCallback = void Function(double progress);

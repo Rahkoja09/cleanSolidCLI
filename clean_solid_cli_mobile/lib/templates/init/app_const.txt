@@ -1,0 +1,8 @@
+class AppConst {
+  static const String appName = '{{Name}}';
+  static const String appVersion = '1.0.0';
+
+  // ─── API ───
+  static const Duration apiTimeout = Duration(seconds: 30);
+  static const int paginationPageSize = 10;
+}

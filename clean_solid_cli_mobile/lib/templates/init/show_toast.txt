@@ -1,0 +1,45 @@
+import 'package:flutter/material.dart';
+import 'package:toastification/toastification.dart';
+
+/// Utilitaire pour afficher des toasts.
+class AppToast {
+  static void success(BuildContext context, String message) {
+    toastification.show(
+      context: context,
+      type: ToastificationType.success,
+      title: Text(message),
+      autoCloseDuration: const Duration(seconds: 3),
+      style: ToastificationStyle.fillColored,
+    );
+  }
+
+  static void error(BuildContext context, String message) {
+    toastification.show(
+      context: context,
+      type: ToastificationType.error,
+      title: Text(message),
+      autoCloseDuration: const Duration(seconds: 4),
+      style: ToastificationStyle.fillColored,
+    );
+  }
+
+  static void info(BuildContext context, String message) {
+    toastification.show(
+      context: context,
+      type: ToastificationType.info,
+      title: Text(message),
+      autoCloseDuration: const Duration(seconds: 3),
+      style: ToastificationStyle.fillColored,
+    );
+  }
+
+  static void warning(BuildContext context, String message) {
+    toastification.show(
+      context: context,
+      type: ToastificationType.warning,
+      title: Text(message),
+      autoCloseDuration: const Duration(seconds: 3),
+      style: ToastificationStyle.fillColored,
+    );
+  }
+}

@@ -1,0 +1,12 @@
+import 'package:equatable/equatable.dart';
+
+/// Classe de base pour toutes les actions de l'application.
+/// Chaque feature doit étendre cette classe pour ses propres actions.
+abstract class AppAction extends Equatable {
+  final String? id;
+
+  const AppAction({this.id});
+
+  @override
+  List<Object?> get props => [id];
+}

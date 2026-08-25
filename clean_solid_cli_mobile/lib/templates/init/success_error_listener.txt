@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+import 'package:{{name}}/shared/widgets/popup/snackbar.dart';
+
+/// Widget qui écoute les changements d'erreur/succès du controller
+/// et affiche automatiquement des snackbar ou toasts.
+class SuccessErrorListener extends StatelessWidget {
+  final Widget child;
+  final bool isLoading;
+  final String? errorMessage;
+  final String? successMessage;
+
+  const SuccessErrorListener({
+    super.key,
+    required this.child,
+    this.isLoading = false,
+    this.errorMessage,
+    this.successMessage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Afficher les erreurs
+    if (errorMessage != null && errorMessage!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AppSnackbar.showError(context, errorMessage!);
+      });
+    }
+
+    // Afficher les succès
+    if (successMessage != null && successMessage!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AppSnackbar.showSuccess(context, successMessage!);
+      });
+    }
+
+    return child;
+  }
+}

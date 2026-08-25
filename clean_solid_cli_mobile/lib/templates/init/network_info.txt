@@ -1,0 +1,37 @@
+import 'dart:async';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+
+abstract class NetworkInfo {
+  Future<bool> get isConnected;
+  Stream<bool> get onStatusChange;
+}
+
+class NetworkInfoImpl implements NetworkInfo {
+  final InternetConnection _checker;
+  StreamSubscription? _subscription;
+  bool _lastStatus = true;
+
+  NetworkInfoImpl({InternetConnection? checker})
+      : _checker = checker ?? InternetConnection();
+
+  @override
+  Future<bool> get isConnected async {
+    try {
+      return await _checker.hasInternetAccess;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Stream<bool> get onStatusChange {
+    return _checker.onStatusChange.map((result) {
+      _lastStatus = result.hasInternetAccess;
+      return _lastStatus;
+    });
+  }
+
+  void dispose() {
+    _subscription?.cancel();
+  }
+}

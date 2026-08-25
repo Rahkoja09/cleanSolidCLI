@@ -1,0 +1,20 @@
+import 'package:get_it/get_it.dart';
+import 'package:{{name}}/core/network/network_info.dart';
+{{#if supabase}}
+import 'package:supabase_flutter/supabase_flutter.dart';
+{{/if}}
+
+final sl = GetIt.instance;
+
+Future<void> configureDependencies() async {
+  // ─── EXTERNAL ───
+  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl());
+{{#if supabase}}
+  sl.registerLazySingleton(() => Supabase.instance.client);
+{{/if}}
+
+  // ─── FEATURES ───
+  // Enregistrez ici les dépendances de vos features
+  // Exemple :
+  // sl.registerFactory(() => MyFeatureUsecases(sl()));
+}

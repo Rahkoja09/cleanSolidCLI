@@ -1,0 +1,20 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Provider qui stocke le timestamp de la dernière connexion réseau détectée.
+/// Utile pour savoir quand les données ont été synchronisées pour la dernière fois.
+class LastNetworkTimeNotifier extends StateNotifier<DateTime?> {
+  LastNetworkTimeNotifier() : super(null);
+
+  void markOnline() {
+    state = DateTime.now();
+  }
+
+  void reset() {
+    state = null;
+  }
+}
+
+final lastNetworkTimeProvider =
+    StateNotifierProvider<LastNetworkTimeNotifier, DateTime?>(
+  (ref) => LastNetworkTimeNotifier(),
+);

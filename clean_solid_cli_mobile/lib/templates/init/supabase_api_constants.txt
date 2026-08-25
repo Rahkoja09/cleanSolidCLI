@@ -1,0 +1,14 @@
+import 'package:{{name}}/config/constants/app_const.dart';
+
+class SupabaseApiConstants {
+  // ─── TABLE NAMES ───
+  // Ajoutez ici les noms de vos tables Supabase
+  // static const String usersTable = 'users';
+  // static const String sessionsTable = 'sessions';
+
+  // ─── STORAGE BUCKETS ───
+  // static const String avatarsBucket = 'avatars';
+  // static const String mediasBucket = 'medias';
+
+  SupabaseApiConstants._();
+}

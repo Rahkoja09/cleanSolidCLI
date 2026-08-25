@@ -1,0 +1,8 @@
+# ═══════════════════════════════════════════════════
+# ENV VARIABLES
+# Copiez ce fichier en .env et remplissez vos valeurs
+# ═══════════════════════════════════════════════════
+
+# -- Supabase --
+SUPABASE_URL=
+SUPABASE_ANON_KEY=

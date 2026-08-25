@@ -1,0 +1,22 @@
+import 'package:flutter/material.dart';
+
+/// Utilitaire pour afficher des snackbars.
+class AppSnackbar {
+  static void show(BuildContext context, String message, {Color? backgroundColor}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  static void showError(BuildContext context, String message) {
+    show(context, message, backgroundColor: Colors.red);
+  }
+
+  static void showSuccess(BuildContext context, String message) {
+    show(context, message, backgroundColor: Colors.green);
+  }
+}

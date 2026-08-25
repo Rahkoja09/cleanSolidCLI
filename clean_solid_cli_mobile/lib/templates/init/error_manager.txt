@@ -1,0 +1,35 @@
+import 'package:dartz/dartz.dart';
+import 'package:{{name}}/core/error/exceptions.dart';
+import 'package:{{name}}/core/error/failures.dart';
+
+/// Convertit une [AppException] en [Failure] pour la couche domaine.
+Failure handleException(AppException e) {
+  if (e is UnauthorizedException) {
+    return UnauthorizedFailure(message: e.message, code: e.code);
+  }
+  if (e is NotFoundException) {
+    return NotFoundFailure(message: e.message, code: e.code);
+  }
+  if (e is NetworkException) {
+    return NetworkFailure(message: e.message, code: e.code);
+  }
+  if (e is CacheException) {
+    return CacheFailure(message: e.message, code: e.code);
+  }
+  if (e is ApiException) {
+    return ServerFailure(message: e.message, code: e.code);
+  }
+  return UnexpectedFailure(message: e.message, code: e.code);
+}
+
+/// Wrapper pour exécuter un bloc de code et capturer les erreurs.
+Future<Either<Failure, T>> safeRun<T>(Future<T> Function() fn) async {
+  try {
+    final result = await fn();
+    return Right(result);
+  } on AppException catch (e) {
+    return Left(handleException(e));
+  } catch (e) {
+    return Left(UnexpectedFailure(message: '$e'));
+  }
+}

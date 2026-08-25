@@ -99,6 +99,9 @@ class TemplateResolver {
   static Future<String?> resolveCreate(String templateName) =>
   resolve('templates/create/$templateName.txt');
 
+  static Future<String?> resolveInit(String templateName) =>
+  resolve('templates/init/$templateName.txt');
+
   static Future<String?> readTemplate(String relativePath) async {
     final path = await resolve(relativePath);
     if (path == null) return null;

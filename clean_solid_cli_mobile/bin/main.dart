@@ -9,6 +9,7 @@ import 'package:clean_solid_cli_mobile/commands/create_new_feature.dart';
 import 'package:clean_solid_cli_mobile/commands/generate_all_command.dart';
 import 'package:clean_solid_cli_mobile/commands/history_command.dart';
 import 'package:clean_solid_cli_mobile/commands/implemente_new_feature.dart';
+import 'package:clean_solid_cli_mobile/commands/language_command.dart';
 import 'package:clean_solid_cli_mobile/commands/init_command.dart';
 import 'package:clean_solid_cli_mobile/commands/list_command.dart';
 import 'package:clean_solid_cli_mobile/commands/route_commande.dart';
@@ -51,7 +52,7 @@ void main(List<String> arguments) async {
   final runner = CommandRunner(
     'cscm',
     'Clean Solid CLI Mobile — '
-        'Flutter Clean Architecture scaffolding tool.',
+  'Flutter Clean Architecture scaffolding tool.',
   );
 
   // ═══════════════════════════════════════════════════
@@ -77,6 +78,7 @@ void main(List<String> arguments) async {
   runner.addCommand(CommitCommand());
 
   runner.addCommand(RouteCommand());
+  runner.addCommand(LanguageCommand());
 
   // ═══════════════════════════════════════════════════
   // EXECUTION

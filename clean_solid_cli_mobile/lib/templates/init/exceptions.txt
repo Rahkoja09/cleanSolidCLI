@@ -1,0 +1,42 @@
+class AppException implements Exception {
+  final String message;
+  final String? code;
+
+  const AppException({required this.message, this.code});
+
+  @override
+  String toString() => 'AppException: $message${code != null ? ' (code: $code)' : ''}';
+}
+
+class ApiException extends AppException {
+  const ApiException({required super.message, super.code});
+}
+
+class CacheException extends AppException {
+  const CacheException({required super.message, super.code});
+}
+
+class NetworkException extends AppException {
+  const NetworkException({required super.message, super.code});
+}
+
+class UnauthorizedException extends AppException {
+  const UnauthorizedException({
+    super.message = 'Non autorisé',
+    super.code = '401',
+  });
+}
+
+class NotFoundException extends AppException {
+  const NotFoundException({
+    super.message = 'Ressource introuvable',
+    super.code = '404',
+  });
+}
+
+class UnexpectedException extends AppException {
+  const UnexpectedException({
+    super.message = 'Une erreur inattendue est survenue',
+    super.code = 'UNEXPECTED',
+  });
+}

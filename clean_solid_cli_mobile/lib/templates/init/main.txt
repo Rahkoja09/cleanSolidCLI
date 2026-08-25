@@ -1,0 +1,59 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:{{name}}/config/theme/theme_const.dart';
+import 'package:{{name}}/config/theme/theme_provider.dart';
+import 'package:{{name}}/core/di/injection_container.dart';
+import 'package:{{name}}/core/router/app_router.dart';
+import 'package:{{name}}/core/services/storage_service.dart';
+{{#if supabase}}
+import 'package:supabase_flutter/supabase_flutter.dart';
+{{/if}}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ─── STORAGE ───
+  await StorageService.init();
+
+{{#if supabase}}
+  // ─── SUPABASE ───
+  await Supabase.initialize(
+    url: const String.fromEnvironment('SUPABASE_URL'),
+    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+  );
+{{/if}}
+
+  // ─── DEPENDENCIES ───
+  await configureDependencies();
+
+  runApp(
+    const ProviderScope(
+      child: {{name}}App(),
+    ),
+  );
+}
+
+class {{name}}App extends ConsumerWidget {
+  const {{name}}App({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
+    return ScreenUtilInit(
+      designSize: const Size(375, 812),
+      minTextAdapt: true,
+      builder: (context, child) {
+        return MaterialApp.router(
+          title: '{{name}}',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme(context),
+          darkTheme: AppTheme.darkTheme(context),
+          themeMode: themeMode,
+          routerConfig: goRouter,
+        );
+      },
+    );
+  }
+}
