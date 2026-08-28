@@ -12,7 +12,7 @@ import 'package:clean_solid_cli_mobile/utils/template_resolver.dart';
 class InitCommand extends Command {
   @override
   String get description =>
-  'Creer un projet Flutter complet en Clean Architecture depuis zero';
+      'Creer un projet Flutter complet en Clean Architecture depuis zero';
 
   @override
   String get name => 'init';
@@ -29,7 +29,7 @@ class InitCommand extends Command {
       abbr: 'b',
       help: 'Backend a configurer (supabase | firebase | none)',
       defaultsTo: 'supabase',
-        allowed: ['supabase', 'firebase', 'none'],
+      allowed: ['supabase', 'firebase', 'none'],
     );
     argParser.addOption(
       'org',
@@ -41,21 +41,21 @@ class InitCommand extends Command {
       'no-git',
       help: 'Skip git initialization',
       defaultsTo: false,
-        negatable: false,
+      negatable: false,
     );
   }
 
   @override
   Future<void> run() async {
     final projectName =
-    (argResults!['name'] as String?) ??
-    (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
+        (argResults!['name'] as String?) ??
+        (argResults!.rest.isNotEmpty ? argResults!.rest.first : null);
 
     if (projectName == null || projectName.trim().isEmpty) {
       throw const CliException(
         'Veuillez specifier un nom de projet.\n'
-      '   Usage : cscm init <nom_du_projet>\n'
-      '   Exemple : cscm init mon_app',
+        '   Usage : cscm init <nom_du_projet>\n'
+        '   Exemple : cscm init mon_app',
       );
     }
 
@@ -66,113 +66,112 @@ class InitCommand extends Command {
 
     // Validation anti path traversal
     if (projectName.contains('..') ||
-      projectName.contains('/') ||
-      projectName.contains('\\')) {
+        projectName.contains('/') ||
+        projectName.contains('\\')) {
       throw const CliException(
         'Le nom du projet contient des caracteres interdits.',
       );
-      }
+    }
 
-      // Validation org format
-      if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
-        throw CliException(
-          'Format d\'org invalide: "$org".\n'
+    // Validation org format
+    if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
+      throw CliException(
+        'Format d\'org invalide: "$org".\n'
         '   Utilisez le format: com.company (ex: com.example, fr.maboite)',
-        );
-      }
-
-      // Verifier qu'on est pas dans un projet existant
-      if (File('pubspec.yaml').existsSync()) {
-        throw CliException(
-          'Un projet Flutter existe deja dans ce dossier.\n'
-        '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
-        );
-      }
-
-      CliUI.header('Initialisation du projet [$snakeName]');
-
-      // ── 1. flutter create ──
-      CliUI.section('Flutter create');
-
-      if (!GitHelper.isFlutterInstalled()) {
-        throw const CliException(
-          'Flutter n\'est pas installe ou n\'est pas dans le PATH.\n'
-        '   Installez Flutter: https://docs.flutter.dev/get-started/install',
-        );
-      }
-
-      await CliUI.withSpinner(
-        'flutter create $snakeName --org $org',
-        () async {
-          final exitCode = GitHelper.flutterCreate(
-            projectName: snakeName,
-            org: org,
-          );
-          if (exitCode != 0) {
-            throw CliException(
-              'flutter create a echoue (exit code: $exitCode).\n'
-            '   Verifiez que Flutter est correctement installe.',
-            );
-          }
-          return null;
-        },
       );
+    }
 
-      CliUI.success('Projet Flutter cree');
+    // Verifier qu'on est pas dans un projet existant
+    if (File('pubspec.yaml').existsSync()) {
+      throw CliException(
+        'Un projet Flutter existe deja dans ce dossier.\n'
+        '   Si vous voulez configurer CSCM, utilisez : cscm config -n $snakeName',
+      );
+    }
 
-      // ── 2. Overlay clean architecture ──
-      CliUI.section('Clean Architecture overlay');
-      _createProjectStructure(snakeName, backend);
+    CliUI.header('Initialisation du projet [$snakeName]');
 
-      // ── 3. .cscm.yaml ──
-      ConfigReader.createConfig(projectName: snakeName, backend: backend);
-      CliUI.success('.cscm.yaml cree');
+    // ── 1. flutter create ──
+    CliUI.section('Flutter create');
 
-      // ── 4. .cscm-state.yaml ──
-      _createProjectState(snakeName, snakeName, backend);
-      CliUI.success('.cscm-state.yaml cree');
+    if (!GitHelper.isFlutterInstalled()) {
+      throw const CliException(
+        'Flutter n\'est pas installe ou n\'est pas dans le PATH.\n'
+        '   Installez Flutter: https://docs.flutter.dev/get-started/install',
+      );
+    }
 
-      // ── 5. Git init ──
-      if (!noGit) {
-        CliUI.section('Git');
-        final projectDir = snakeName;
+    await CliUI.withSpinner('flutter create $snakeName --org $org', () async {
+      final exitCode = GitHelper.flutterCreate(
+        projectName: snakeName,
+        org: org,
+      );
+      if (exitCode != 0) {
+        throw CliException(
+          'flutter create a echoue (exit code: $exitCode).\n'
+          '   Verifiez que Flutter est correctement installe.',
+        );
+      }
+      return null;
+    });
 
-        if (GitHelper.isGitInstalled()) {
-          if (!GitHelper.isGitRepo()) {
-            if (GitHelper.initRepo(directory: projectDir)) {
-              CliUI.success('git init');
+    CliUI.success('Projet Flutter cree');
 
-              final commitResult = GitHelper.commit(
-                message: 'init: cscm project $snakeName with clean architecture',
-                directory: projectDir,
-              );
-              if (commitResult != null) {
-                CliUI.success('Initial commit cree');
-              } else {
-                CliUI.warning('Initial commit echoue (peut-etre .gitignore actif)');
-              }
+    // ── 2. Overlay clean architecture ──
+    CliUI.section('Clean Architecture overlay');
+    _createProjectStructure(snakeName, backend);
+
+    // ── 3. .cscm.yaml ──
+    ConfigReader.createConfig(projectName: snakeName, backend: backend);
+    CliUI.success('.cscm.yaml cree');
+
+    // ── 4. .cscm-state.yaml ──
+    _createProjectState(snakeName, snakeName, backend);
+    CliUI.success('.cscm-state.yaml cree');
+
+    // ── 5. Git init ──
+    if (!noGit) {
+      CliUI.section('Git');
+      final projectDir = snakeName;
+
+      if (GitHelper.isGitInstalled()) {
+        if (!GitHelper.isGitRepo()) {
+          if (GitHelper.initRepo(directory: projectDir)) {
+            CliUI.success('git init');
+
+            final commitResult = GitHelper.commit(
+              message: 'init: cscm project $snakeName with clean architecture',
+              directory: projectDir,
+            );
+            if (commitResult != null) {
+              CliUI.success('Initial commit cree');
             } else {
-              CliUI.warning('git init a echoue');
+              CliUI.warning(
+                'Initial commit echoue (peut-etre .gitignore actif)',
+              );
             }
           } else {
-            CliUI.info('Git repo deja present');
+            CliUI.warning('git init a echoue');
           }
         } else {
-          CliUI.warning('Git non installe, initialisation git ignoree');
+          CliUI.info('Git repo deja present');
         }
+      } else {
+        CliUI.warning('Git non installe, initialisation git ignoree');
       }
+    }
 
-      // ── 6. Summary ──
-      print('');
-      CliUI.success('Projet [$snakeName] cree avec succes !');
-      print('');
-      CliUI.nextSteps([
-        'cd $snakeName',
-        'flutter pub get',
-        if (backend == 'supabase' || backend == 'firebase')
-          'Configurer le fichier .env avec vos cles $backend',
-          'cscm create ma_feature -i "nom:string,prix:double"',
-      ]);
+    // ── 6. Summary ──
+    print('');
+    CliUI.success('Projet [$snakeName] cree avec succes !');
+    print('');
+    CliUI.nextSteps([
+      'cd $snakeName',
+      'flutter pub get',
+      if (backend == 'supabase' || backend == 'firebase')
+        'Configurer le fichier .env avec vos cles $backend',
+      'cscm create ma_feature -i "nom:string,prix:double"',
+    ]);
   }
 
   /// Overlay clean architecture files on top of the flutter create project.
@@ -213,53 +212,84 @@ class InitCommand extends Command {
     }
 
     // --- CONFIG FILES ---
-    await _writeTpl('$libDir/config/constants/app_const.dart',
-                    'app_const', {'Name': pascalName});
-    await _writeTpl('$libDir/config/constants/supabase_api_constants.dart',
-                    'supabase_api_constants');
-    await _writeTpl('$libDir/config/theme/theme_provider.dart',
-                    'theme_provider', {'name': name});
+    await _writeTpl(
+      '$libDir/config/constants/app_const.dart',
+      'app_const',
+      variables: {'Name': pascalName},
+    );
+    await _writeTpl(
+      '$libDir/config/constants/supabase_api_constants.dart',
+      'supabase_api_constants',
+    );
+    await _writeTpl(
+      '$libDir/config/theme/theme_provider.dart',
+      'theme_provider',
+      variables: {'name': name},
+    );
     await _writeTpl('$libDir/config/theme/theme_const.dart', 'theme_const');
 
     // --- CORE ---
-    await _writeTpl('$libDir/core/services/storage_service.dart', 'storage_service');
+    await _writeTpl(
+      '$libDir/core/services/storage_service.dart',
+      'storage_service',
+    );
     await _writeTpl('$libDir/core/actions/app_action.dart', 'app_action');
     await _writeTpl(
       '$libDir/core/di/injection_container.dart',
       'injection_container',
-      {'name': name},
-      conditionals: {'supabase': hasSupabase});
+      variables: {'name': name},
+      conditionals: {'supabase': hasSupabase},
+    );
     await _writeTpl('$libDir/core/error/exceptions.dart', 'exceptions');
     await _writeTpl('$libDir/core/error/failures.dart', 'failures');
     await _writeTpl('$libDir/core/error/error_manager.dart', 'error_manager');
     await _writeTpl('$libDir/core/network/network_info.dart', 'network_info');
     await _writeTpl('$libDir/core/router/app_router.dart', 'app_router');
-    await _writeTpl('$libDir/core/utils/typedefs.dart', 'typedefs', {'name': name});
+    await _writeTpl(
+      '$libDir/core/utils/typedefs.dart',
+      'typedefs',
+      variables: {'name': name},
+    );
 
     // --- ERROR LISTENER ---
     await _writeTpl(
       '$libDir/core/mainErrorListener/success_error_listener.dart',
       'success_error_listener',
-      {'name': name});
+      variables: {'name': name},
+    );
     await _writeTpl(
       '$libDir/core/mainErrorListener/last_network_time_provider.dart',
-      'last_network_time_provider');
+      'last_network_time_provider',
+    );
 
     // --- SHARED WIDGETS ---
-    await _writeTpl('$libDir/shared/widgets/popup/show_toast.dart', 'show_toast');
+    await _writeTpl(
+      '$libDir/shared/widgets/popup/show_toast.dart',
+      'show_toast',
+    );
     await _writeTpl('$libDir/shared/widgets/popup/snackbar.dart', 'snackbar');
-    await _writeTpl('$libDir/shared/widgets/loading/loading_widget.dart', 'loading_widget');
+    await _writeTpl(
+      '$libDir/shared/widgets/loading/loading_widget.dart',
+      'loading_widget',
+    );
 
     // --- MAIN ---
-    await _writeTpl('$libDir/main.dart', 'main', {'name': name},
-                    conditionals: {'supabase': hasSupabase});
+    await _writeTpl(
+      '$libDir/main.dart',
+      'main',
+      variables: {'name': name},
+      conditionals: {'supabase': hasSupabase},
+    );
 
     // --- MERGE DEPENDENCIES INTO EXISTING pubspec.yaml ---
     _mergePubspecDependencies(name, backend, projectDir.path);
 
     // --- ASSETS & MISC ---
     await _writeTpl('${projectDir.path}/.env', 'env_template');
-    await _writeTpl('${projectDir.path}/analysis_options.yaml', 'analysis_options');
+    await _writeTpl(
+      '${projectDir.path}/analysis_options.yaml',
+      'analysis_options',
+    );
 
     // .gitignore already created by flutter create, append our additions
     _appendGitignore(projectDir.path);
@@ -335,7 +365,7 @@ class InitCommand extends Command {
       if (devDepsMatch != null) {
         content = content.replaceFirst(
           devDepsMatch.group(0)!,
-          '$depsBlock\n\n${devDepsMatch.group(0)!}',
+          '$depsBlock\n\n${devDepsMatch.group(0)}',
         );
       } else {
         // Append at end
@@ -354,7 +384,7 @@ class InitCommand extends Command {
       if (flutterMatch != null) {
         content = content.replaceFirst(
           flutterMatch.group(0)!,
-          '$devDepsBlock\n\n${flutterMatch.group(0)!}',
+          '$devDepsBlock\n\n${flutterMatch.group(0)}',
         );
       } else {
         content = '$content\n$devDepsBlock\n';
@@ -362,15 +392,16 @@ class InitCommand extends Command {
     }
 
     // Add assets to flutter section
-    if (content.contains('flutter:') && !content.contains('assets/medias/icons/')) {
+    if (content.contains('flutter:') &&
+        !content.contains('assets/medias/icons/')) {
       content = content.replaceFirst(
         'flutter:\n',
         'flutter:\n'
-      '  uses-material-design: true\n'
-      '  assets:\n'
-      '    - assets/medias/icons/\n'
-      '    - assets/medias/animations/\n'
-      '    - assets/theme/\n',
+            '  uses-material-design: true\n'
+            '  assets:\n'
+            '    - assets/medias/icons/\n'
+            '    - assets/medias/animations/\n'
+            '    - assets/theme/\n',
       );
       // Remove duplicate uses-material-design if any
       final lines = content.split('\n');
@@ -401,10 +432,10 @@ class InitCommand extends Command {
 
     gitignore.writeAsStringSync(
       '$content'
-    '\n'
-    '# CSCM\n'
-    '.env\n'
-    '.cscm-features.yaml\n',
+      '\n'
+      '# CSCM\n'
+      '.env\n'
+      '.cscm-features.yaml\n',
     );
   }
 
@@ -414,19 +445,15 @@ class InitCommand extends Command {
     CliUI.fileCreated(path.split('/').last);
   }
 
-  void _createProjectState(
-    String projectPath,
-    String name,
-    String backend,
-  ) {
+  void _createProjectState(String projectPath, String name, String backend) {
     final stateFile = File('$projectPath/${ProjectState.stateFileName}');
     if (stateFile.existsSync()) {
       stateFile.deleteSync();
     }
 
     final comment =
-    '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
-    '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
+        '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
+        '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
     final now = DateTime.now().toUtc().toIso8601String();
     final yaml = '''version: 1
     project_name: $name
@@ -458,62 +485,62 @@ class InitCommand extends Command {
   Future<void> _writeTpl(
     String targetPath,
     String templateName, {
-      Map<String, String> variables = const {},
-      Map<String, bool> conditionals = const {},
-    }) async {
-      final resolvedPath = await TemplateResolver.resolveInit(templateName);
-      if (resolvedPath == null) {
-        throw CliException('Template init/$templateName.txt introuvable.');
-      }
-
-      String content = File(resolvedPath).readAsStringSync();
-
-      // Apply variable replacements ({{name}}, {{Name}}, etc.)
-      for (final entry in variables.entries) {
-        content = content.replaceAll('{{${entry.key}}}', entry.value);
-      }
-
-      // Process conditional blocks ({{#if var}}...{{/if}})
-      for (final entry in conditionals.entries) {
-        content = _processConditional(content, entry.key, entry.value);
-      }
-
-      _writeFile(targetPath, content);
+    Map<String, String> variables = const {},
+    Map<String, bool> conditionals = const {},
+  }) async {
+    final resolvedPath = await TemplateResolver.resolveInit(templateName);
+    if (resolvedPath == null) {
+      throw CliException('Template init/$templateName.txt introuvable.');
     }
 
-    /// Process `{{#if variable}}...{{/if}}` blocks.
-    static String _processConditional(
-      String content,
-      String variable,
-      bool enabled,
-    ) {
-      final startTag = '{{#if $variable}}';
-      final endTag = '{{/if}}';
+    String content = File(resolvedPath).readAsStringSync();
 
-      while (content.contains(startTag)) {
-        final startIndex = content.indexOf(startTag);
-        final endIndex = content.indexOf(endTag, startIndex);
-
-        if (endIndex == -1) break;
-
-        if (enabled) {
-          final blockContent = content.substring(
-            startIndex + startTag.length,
-            endIndex,
-          );
-          content = content.replaceRange(
-            startIndex,
-            endIndex + endTag.length,
-            blockContent,
-          );
-        } else {
-          content = content.replaceRange(
-            startIndex,
-            endIndex + endTag.length,
-            '',
-          );
-        }
-      }
-      return content;
+    // Apply variable replacements ({{name}}, {{Name}}, etc.)
+    for (final entry in variables.entries) {
+      content = content.replaceAll('{{${entry.key}}}', entry.value);
     }
+
+    // Process conditional blocks ({{#if var}}...{{/if}})
+    for (final entry in conditionals.entries) {
+      content = _processConditional(content, entry.key, entry.value);
+    }
+
+    _writeFile(targetPath, content);
+  }
+
+  /// Process `{{#if variable}}...{{/if}}` blocks.
+  static String _processConditional(
+    String content,
+    String variable,
+    bool enabled,
+  ) {
+    final startTag = '{{#if $variable}}';
+    final endTag = '{{/if}}';
+
+    while (content.contains(startTag)) {
+      final startIndex = content.indexOf(startTag);
+      final endIndex = content.indexOf(endTag, startIndex);
+
+      if (endIndex == -1) break;
+
+      if (enabled) {
+        final blockContent = content.substring(
+          startIndex + startTag.length,
+          endIndex,
+        );
+        content = content.replaceRange(
+          startIndex,
+          endIndex + endTag.length,
+          blockContent,
+        );
+      } else {
+        content = content.replaceRange(
+          startIndex,
+          endIndex + endTag.length,
+          '',
+        );
+      }
+    }
+    return content;
+  }
 }
