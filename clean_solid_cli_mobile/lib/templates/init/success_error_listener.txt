@@ -1,37 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:{{name}}/core/mainErrorListener/last_network_time_provider.dart';
+import 'package:{{name}}/core/error/failures.dart';
+import 'package:{{name}}/core/error/error_manager.dart';
 import 'package:{{name}}/shared/widgets/popup/snackbar.dart';
+import 'package:{{name}}/shared/widgets/popup/show_toast.dart';
 
-/// Widget qui écoute les changements d'erreur/succès du controller
-/// et affiche automatiquement des snackbar ou toasts.
-class SuccessErrorListener extends StatelessWidget {
+class SuccessErrorListener extends ConsumerWidget {
+  const SuccessErrorListener({super.key, required this.child});
+
   final Widget child;
-  final bool isLoading;
-  final String? errorMessage;
-  final String? successMessage;
-
-  const SuccessErrorListener({
-    super.key,
-    required this.child,
-    this.isLoading = false,
-    this.errorMessage,
-    this.successMessage,
-  });
 
   @override
-  Widget build(BuildContext context) {
-    // Afficher les erreurs
-    if (errorMessage != null && errorMessage!.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppSnackbar.showError(context, errorMessage!);
-      });
+  Widget build(BuildContext context, WidgetRef ref) {
+    void _showFilteredError({
+      required BuildContext context,
+      required WidgetRef ref,
+      required Failure failure,
+      required dynamic action,
+      required String title,
+    }) {
+      final now = DateTime.now();
+      final lastErrorTime = ref.read(lastNetworkTimeProvider);
+      final isNetworkError = failure is NetworkFailure || failure.code == 'Network_01';
+
+      if (isNetworkError) {
+        if (lastErrorTime == null || now.difference(lastErrorTime).inSeconds > 3) {
+          ref.read(lastNetworkTimeProvider.notifier).state = now;
+          final msg = SuccesErrorManager.getFriendlyErrorMessage(failure, action);
+          AppSnackbar.show(context, msg, backgroundColor: Colors.red);
+        }
+      } else {
+        final msg = SuccesErrorManager.getFriendlyErrorMessage(failure, action);
+        AppToast.error(context, msg);
+      }
     }
 
-    // Afficher les succès
-    if (successMessage != null && successMessage!.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppSnackbar.showSuccess(context, successMessage!);
-      });
-    }
+    // [LISTENERS_ANCHOR]
 
     return child;
   }

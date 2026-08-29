@@ -38,7 +38,7 @@ void main() {
     });
 
     test('should set error on failure', () async {
-      const tFailure = ServerFailure(message: 'Server error', code: '500');
+      const tFailure = ServerFailure('Server error', '500');
       when(() => mockUsecases.search{{name}}(
         criteria: any(named: 'criteria'),
         start: any(named: 'start'),
@@ -46,7 +46,7 @@ void main() {
       )).thenAnswer((_) async => const Left(tFailure));
       await sut.search{{name}}(null);
       expect(sut.state.isLoading, false);
-      expect(sut.state.error, const ServerFailure(message: 'Server error', code: '500'));
+      expect(sut.state.error, const ServerFailure('Server error', '500'));
     });
   });
 

@@ -244,7 +244,7 @@ class InitCommand extends Command {
       conditionals: {'supabase': hasSupabase},
     );
     await _writeTpl('$libDir/core/error/exceptions.dart', 'exceptions');
-    await _writeTpl('$libDir/core/error/failures.dart', 'failures');
+    await _writeTpl('$libDir/core/error/failures.dart', 'failures', variables: {'name': name});
     await _writeTpl('$libDir/core/error/error_manager.dart', 'error_manager',
         variables: {'name': name});
     await _writeTpl('$libDir/core/network/network_info.dart', 'network_info');

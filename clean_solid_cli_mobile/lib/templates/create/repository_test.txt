@@ -48,7 +48,7 @@ void main() {
     test('should return NetworkFailure when offline', () async {
       setupOffline();
       final result = await sut.insert{{name}}(tEntity);
-      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
+      expect(result, Left(NetworkFailure('Pas de connexion Internet', 'NET_001')));
       verifyNever(() => mockRemoteSource.insert{{name}}(any()));
     });
 
@@ -64,14 +64,14 @@ void main() {
       );
     });
 
-    test('should return UnexpectedFailure on unknown exception', () async {
+    test('should return UnexceptedFailure on unknown exception', () async {
       setupConnected();
       when(() => mockRemoteSource.insert{{name}}(any()))
           .thenThrow(Exception('unexpected'));
       final result = await sut.insert{{name}}(tEntity);
       expect(result.isLeft(), true);
       result.fold(
-        (f) => expect(f, isA<UnexpectedFailure>()),
+        (f) => expect(f, isA<UnexceptedFailure>()),
         (_) => fail('Should not be Right'),
       );
     });
@@ -92,7 +92,7 @@ void main() {
     test('should return NetworkFailure when offline', () async {
       setupOffline();
       final result = await sut.update{{name}}(tEntity);
-      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
+      expect(result, Left(NetworkFailure('Pas de connexion Internet', 'NET_001')));
     });
   });
 
@@ -118,7 +118,7 @@ void main() {
     test('should return NetworkFailure when offline', () async {
       setupOffline();
       final result = await sut.search{{name}}(start: 0, end: 9);
-      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
+      expect(result, Left(NetworkFailure( 'Pas de connexion Internet', 'NET_001')));
     });
   });
 
@@ -145,7 +145,7 @@ void main() {
     test('should return NetworkFailure when offline', () async {
       setupOffline();
       final result = await sut.delete{{name}}ById('1');
-      expect(result, Left(NetworkFailure(message: 'Pas de connexion Internet', code: 'NET_001')));
+      expect(result, Left(NetworkFailure('Pas de connexion Internet','NET_001')));
     });
   });
 }

@@ -22,7 +22,7 @@ void main() async {
   await EnvService.load('.env');
   await Supabase.initialize(
     url: EnvService.get('SUPABASE_URL'),
-    anonKey: EnvService.get('SUPABASE_ANON_KEY'),
+    publishableKey: EnvService.get('SUPABASE_ANON_KEY'),
     authOptions: const FlutterAuthClientOptions(
       autoRefreshToken: true,
       detectSessionInUri: true,

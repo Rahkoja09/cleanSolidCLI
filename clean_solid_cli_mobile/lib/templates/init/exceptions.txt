@@ -1,42 +1,38 @@
-class AppException implements Exception {
+class ServerException implements Exception {
+  final String message;
+  final String code;
+  ServerException({required this.message, required this.code});
+}
+
+class CacheException implements Exception {
+  final String message;
+  CacheException({required this.message});
+}
+
+class NetworkException implements Exception {
+  final String message;
+  NetworkException({required this.message});
+}
+
+class ApiException implements Exception {
   final String message;
   final String? code;
-
-  const AppException({required this.message, this.code});
-
-  @override
-  String toString() => 'AppException: $message${code != null ? ' (code: $code)' : ''}';
+  ApiException({required this.message, this.code = "000"});
 }
 
-class ApiException extends AppException {
-  const ApiException({required super.message, super.code});
+class StorageExceptions implements Exception {
+  final String message;
+  final String? code;
+  StorageExceptions({required this.message, this.code = "000"});
 }
 
-class CacheException extends AppException {
-  const CacheException({required super.message, super.code});
+class AuthUserException implements Exception {
+  final String message;
+  AuthUserException({required this.message});
 }
 
-class NetworkException extends AppException {
-  const NetworkException({required super.message, super.code});
-}
-
-class UnauthorizedException extends AppException {
-  const UnauthorizedException({
-    super.message = 'Non autorisé',
-    super.code = '401',
-  });
-}
-
-class NotFoundException extends AppException {
-  const NotFoundException({
-    super.message = 'Ressource introuvable',
-    super.code = '404',
-  });
-}
-
-class UnexpectedException extends AppException {
-  const UnexpectedException({
-    super.message = 'Une erreur inattendue est survenue',
-    super.code = 'UNEXPECTED',
-  });
+class UnexceptedException implements Exception {
+  final String message;
+  final String? code;
+  UnexceptedException({required this.message, this.code = "000"});
 }

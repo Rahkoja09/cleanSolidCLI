@@ -15,9 +15,12 @@ class NetworkInfoImpl implements NetworkInfo {
 
   @override
   Future<bool> get isConnected async {
+    final stopwatch = Stopwatch()..start();
     try {
       final status = await _checker.internetStatus;
-      return status == InternetStatus.connected;
+      stopwatch.stop();
+      return status == InternetStatus.connected &&
+          stopwatch.elapsedMilliseconds < 1500;
     } catch (_) {
       return false;
     }

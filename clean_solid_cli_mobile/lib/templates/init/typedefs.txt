@@ -1,4 +1,9 @@
-/// Alias de types réutilisables dans tout le projet.
+import 'package:dartz/dartz.dart';
+import 'package:{{name}}/core/error/failures.dart';
+
+typedef ResultFuture<T> = Future<Either<Failure, T>>;
+typedef ResultVoid = Future<Either<Failure, void>>;
+typedef MapData = Map<String, dynamic>;
 
 /// Callback générique avec erreur.
 typedef ErrorCallback = void Function(String message);

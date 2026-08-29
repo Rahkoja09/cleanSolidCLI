@@ -1,47 +1,65 @@
 import 'package:equatable/equatable.dart';
+import 'package:{{name}}/core/error/exceptions.dart';
 
 abstract class Failure extends Equatable {
   final String message;
-  final String? code;
-
-  const Failure({required this.message, this.code});
+  final String code;
+  const Failure(this.message, this.code);
 
   @override
-  List<Object?> get props => [message, code];
+  List<Object> get props => [message];
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure({super.message = 'Erreur serveur', super.code});
+  const ServerFailure(super.message, super.code);
+
+  factory ServerFailure.fromException(ServerException exception) {
+    return ServerFailure(exception.message, exception.code);
+  }
 }
 
-class NetworkFailure extends Failure {
-  const NetworkFailure({
-    super.message = 'Pas de connexion internet',
-    super.code = 'NO_INTERNET',
-  });
+class AuthFailure extends Failure {
+  const AuthFailure(super.message, super.code);
+
+  factory AuthFailure.fromException(AuthUserException exception) {
+    return AuthFailure(exception.message, "Auth_01");
+  }
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure({super.message = 'Erreur de cache', super.code});
+  const CacheFailure(super.message, super.code);
+  factory CacheFailure.fromException(CacheException exception) {
+    return CacheFailure(exception.message, "Cache_01");
+  }
 }
 
-class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure({
-    super.message = 'Non autorisé',
-    super.code = '401',
-  });
+class NetworkFailure extends Failure {
+  const NetworkFailure(super.message, super.code);
+
+  factory NetworkFailure.fromException(NetworkException exception) {
+    return NetworkFailure(exception.message, "Network_01");
+  }
 }
 
-class NotFoundFailure extends Failure {
-  const NotFoundFailure({
-    super.message = 'Ressource introuvable',
-    super.code = '404',
-  });
+class StorageFailure extends Failure {
+  const StorageFailure(super.message, super.code);
+  factory StorageFailure.fromException(ApiException exception) {
+    return StorageFailure(exception.message, exception.code!);
+  }
 }
 
-class UnexpectedFailure extends Failure {
-  const UnexpectedFailure({
-    super.message = 'Erreur inattendue',
-    super.code = 'UNEXPECTED',
-  });
+class ApiFailure extends Failure {
+  const ApiFailure(super.message, super.code);
+
+  factory ApiFailure.fromException(ApiException exception) {
+    return ApiFailure(exception.message, exception.code!);
+  }
+}
+
+class UnexceptedFailure extends Failure {
+  const UnexceptedFailure(super.message, super.code);
+
+  factory UnexceptedFailure.fromException(UnexceptedException exception) {
+    return UnexceptedFailure(exception.message, "000");
+  }
 }

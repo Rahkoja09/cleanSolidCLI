@@ -51,9 +51,9 @@ class {{name}}RepositoryImpl implements {{name}}Repository {
       } on ApiException catch (e) {
         return Left(ApiFailure.fromException(e));
       } catch (e) {
-        return Left(UnexpectedFailure(message: e.toString(), code: "500"));
+        return Left(UnexceptedFailure(e.toString(),'500'));
       }
     }
-    return const Left(NetworkFailure(message: "Pas de connexion Internet", code: "NET_001"));
+    return const Left(NetworkFailure('Pas de connexion Internet','NET_001'));
   }
 }
