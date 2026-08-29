@@ -127,7 +127,22 @@ class InitCommand extends Command {
     CliUI.success('.cscm.yaml cree');
 
     // ── 4. .cscm-state.yaml ──
-    _createProjectState(snakeName, snakeName, backend);
+    final now = DateTime.now().toUtc().toIso8601String();
+    final state = ProjectState(
+      projectName: snakeName,
+      createdAt: now,
+      backend: backend,
+    );
+    state.actions.add(ActionRecord(
+      timestamp: now,
+      command: 'init',
+      args: [snakeName],
+    ));
+    File('$snakeName/${ProjectState.stateFileName}').writeAsStringSync(
+      '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
+    '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n'
+    '${state.toYaml()}',
+    );
     CliUI.success('.cscm-state.yaml cree');
 
     // ── 5. Git init ──
@@ -392,36 +407,6 @@ class InitCommand extends Command {
     final file = File(path);
     file.writeAsStringSync(content);
     CliUI.fileCreated(path.split('/').last);
-  }
-
-  void _createProjectState(String projectPath, String name, String backend) {
-    final stateFile = File('$projectPath/${ProjectState.stateFileName}');
-    if (stateFile.existsSync()) {
-      stateFile.deleteSync();
-    }
-
-    final comment =
-        '# .cscm-state.yaml — auto-genere par cscm, ne pas editer a la main\n'
-        '# Ce fichier suit l\'historique des actions cscm sur le projet.\n\n';
-    final now = DateTime.now().toUtc().toIso8601String();
-    final yaml = '''version: 1
-    project_name: $name
-    created_at: "$now"
-    backend: $backend
-    features: []
-    auth:
-    configured: false
-    configured_at: ""
-    email: false
-    social: false
-    files_created: []
-    actions:
-    - timestamp: "$now"
-    command: init
-    args:
-    - $name
-    ''';
-    stateFile.writeAsStringSync(comment + yaml);
   }
 
   // ═══════════════════════════════════════════════════

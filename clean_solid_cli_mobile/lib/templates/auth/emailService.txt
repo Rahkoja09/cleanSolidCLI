@@ -3,8 +3,8 @@ import 'package:{{projectName}}/core/error/exceptions.dart';
 import 'package:{{projectName}}/features/auth/data/model/auth_model.dart';
 
 class EmailAuthService {
-  final SupabaseClient _client;
   EmailAuthService(this._client);
+  final SupabaseClient _client;
 
   // --- CRÉATION DE COMPTE ---
   Future<AuthModel> signUp(String email, String password) async {
@@ -13,12 +13,14 @@ class EmailAuthService {
         email: email,
         password: password,
       );
-      if (res.user == null) throw ApiException(message: "Erreur lors de l'inscription");
+      if (res.user == null) {
+        throw ApiException(message: "Erreur lors de l'inscription");
+      };
       return AuthModel.fromSupabase(res.user!);
     } on AuthException catch (e) {
       throw ApiException(message: e.message, code: e.statusCode);
     } catch (e) {
-      throw UnexpectedException(message: e.toString());
+      throw UnexceptedException(message: e.toString());
     }
   }
 
@@ -29,12 +31,14 @@ class EmailAuthService {
         email: email,
         password: password,
       );
-      if (res.user == null) throw ApiException(message: "Utilisateur introuvable");
+      if (res.user == null) {
+        throw ApiException(message: 'Utilisateur introuvable');
+      }
       return AuthModel.fromSupabase(res.user!);
     } on AuthException catch (e) {
       throw ApiException(message: e.message, code: e.statusCode);
     } catch (e) {
-      throw UnexpectedException(message: e.toString());
+      throw UnexceptedException(message: e.toString());
     }
   }
 
@@ -45,7 +49,7 @@ class EmailAuthService {
     } on AuthException catch (e) {
       throw ApiException(message: e.message, code: e.statusCode);
     } catch (e) {
-      throw UnexpectedException(message: e.toString());
+      throw UnexceptedException(message: e.toString());
     }
   }
 
@@ -57,12 +61,12 @@ class EmailAuthService {
         token: code,
         type: type, // Utilise OtpType.signup ou OtpType.recovery
       );
-      if (res.user == null) throw ApiException(message: "Code invalide");
+      if (res.user == null) throw ApiException(message: 'Code invalide');
       return AuthModel.fromSupabase(res.user!);
     } on AuthException catch (e) {
       throw ApiException(message: e.message, code: e.statusCode);
     } catch (e) {
-      throw UnexpectedException(message: e.toString());
+      throw UnexceptedException(message: e.toString());
     }
   }
 
@@ -75,7 +79,7 @@ class EmailAuthService {
     } on AuthException catch (e) {
       throw ApiException(message: e.message, code: e.statusCode);
     } catch (e) {
-      throw UnexpectedException(message: e.toString());
+      throw UnexceptedException(message: e.toString());
     }
   }
 }

@@ -23,6 +23,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/',
         builder: (context, state) => const _PlaceholderPage(),
       ),
+      // [ROUTES_ANCHOR]
     ],
     redirect: (context, state) {
       // Attendre que l'app soit initialisee

@@ -169,11 +169,12 @@ class ProjectState {
     required this.projectName,
     required this.createdAt,
     this.backend = 'supabase',
-    this.features = const [],
+    List<FeatureRecord>? features,
     AuthRecord? auth,
-    this.actions = const [],
-  }) : auth = auth ??
-            AuthRecord(configured: false, configuredAt: '');
+    List<ActionRecord>? actions,
+  }) : features = features ?? [],
+  auth = auth ?? AuthRecord(configured: false, configuredAt: ''),
+  actions = actions ?? [];
 
   // ─── Serialization ────────────────────
 
