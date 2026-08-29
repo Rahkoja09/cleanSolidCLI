@@ -1,18 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:{{name}}/core/services/storage_service.dart';
 
-class {{name}}ThemeProvider extends StateNotifier<ThemeMode> {
-  {{name}}ThemeProvider() : super(ThemeMode.system);
-
-  void setThemeMode(ThemeMode mode) {
-    state = mode;
-  }
-
-  void toggleTheme() {
-    state = state == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-  }
-}
-
-final themeModeProvider = StateNotifierProvider<{{name}}ThemeProvider, ThemeMode>(
-  (ref) => {{name}}ThemeProvider(),
-);
+final themeModeProvider = StateProvider<ThemeMode>((ref) {
+  return StorageService.getBool(StorageService.keyThemeMode) == true
+      ? ThemeMode.dark
+      : ThemeMode.light;
+});

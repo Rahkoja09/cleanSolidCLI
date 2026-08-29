@@ -1,0 +1,23 @@
+import 'dart:io';
+
+/// Service pour lire les variables d'environnement depuis le fichier .env.
+/// Lit le fichier au runtime (pas bundle dans l'apk/ipa).
+class EnvService {
+  static Map<String, String> _env = {};
+
+  static Future<void> load(String path) async {
+    final file = File(path);
+    if (!file.existsSync()) return;
+    final lines = await file.readAsLines();
+    for (final line in lines) {
+      if (line.trim().isEmpty || line.trim().startsWith('#')) continue;
+      final sep = line.indexOf('=');
+      if (sep == -1) continue;
+      _env[line.substring(0, sep).trim()] =
+          line.substring(sep + 1).trim();
+    }
+  }
+
+  static String get(String key, {String fallback = ''}) =>
+      _env[key] ?? fallback;
+}

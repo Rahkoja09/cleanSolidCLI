@@ -1,0 +1,72 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:toastification/toastification.dart';
+import 'package:{{name}}/config/constants/app_const.dart';
+import 'package:{{name}}/config/theme/theme_const.dart';
+import 'package:{{name}}/config/theme/theme_provider.dart';
+import 'package:{{name}}/core/router/app_router.dart';
+
+/// Widget racine de l'application.
+/// Gere l'initialisation, la configuration systeme et le theme.
+class AppShell extends ConsumerStatefulWidget {
+  const AppShell({super.key});
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appInitReadyProvider.notifier).state = true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isReady = ref.watch(appInitReadyProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final router = ref.watch(goRouterProvider);
+
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarDividerColor: Colors.transparent,
+      ),
+    );
+
+    return ScreenUtilInit(
+      designSize: const Size(390, 844),
+      minTextAdapt: true,
+      builder: (context, child) {
+        if (!isReady) {
+          return const MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        return ToastificationWrapper(
+          child: MaterialApp.router(
+            title: AppConst.appName,
+            debugShowCheckedModeBanner: false,
+            theme: ThemeConst.lightTheme(context),
+            darkTheme: ThemeConst.darkTheme(context),
+            themeMode: themeMode,
+            routerConfig: router,
+          ),
+        );
+      },
+    );
+  }
+}

@@ -7,17 +7,17 @@ abstract class NetworkInfo {
 }
 
 class NetworkInfoImpl implements NetworkInfo {
+  NetworkInfoImpl({InternetConnection? checker})
+    : _checker = checker ?? InternetConnection();
   final InternetConnection _checker;
   StreamSubscription? _subscription;
   bool _lastStatus = true;
 
-  NetworkInfoImpl({InternetConnection? checker})
-      : _checker = checker ?? InternetConnection();
-
   @override
   Future<bool> get isConnected async {
     try {
-      return await _checker.hasInternetAccess;
+      final status = await _checker.internetStatus;
+      return status == InternetStatus.connected;
     } catch (_) {
       return false;
     }
@@ -26,7 +26,7 @@ class NetworkInfoImpl implements NetworkInfo {
   @override
   Stream<bool> get onStatusChange {
     return _checker.onStatusChange.map((result) {
-      _lastStatus = result.hasInternetAccess;
+      _lastStatus = result == InternetStatus.connected;
       return _lastStatus;
     });
   }

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-/// Tracker d'initialisation — définit ici pour éviter les imports circulaires.
-final appInitReadyProvider = StateProvider<bool>((ref) => false);
+import 'package:{{name}}/core/app/app_shell.dart';
 
 /// GoRouter en tant que Riverpod Provider.
 /// Cela permet de reagir aux changements d'etat (auth, etc.)
@@ -31,7 +29,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     },
     errorBuilder: (context, state) => Scaffold(
       body: Center(
-        child: Text('Page non trouvée: ${state.uri.path}'),
+        child: Text('Page non trouv\u00e9e: ${state.uri.path}'),
       ),
     ),
   );
