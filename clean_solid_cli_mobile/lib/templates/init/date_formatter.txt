@@ -1,0 +1,46 @@
+import 'package:intl/intl.dart';
+
+/// Formats a [DateTime] into a compact, locale-aware display string.
+///
+/// Single date  : `formatDate(date: DateTime(2025,1,5))` → `"5 janv. 2025"`
+/// Date range  : `formatDate(date: start, endDate: end)` → `"5 janv. - 12 févr. 2025"`
+String formatDate({
+  required DateTime startDate,
+  DateTime? endDate,
+  bool showYear = true,
+  String locale = 'fr_FR',
+}) {
+  final df = DateFormat('d MMMM', locale);
+  final dfShort = DateFormat('d MMM', locale);
+
+  // Single date
+  if (endDate == null || startDate.isAtSameMomentAs(endDate)) {
+    String result = dfShort.format(startDate);
+    if (showYear) result += ' ${startDate.year}';
+    return result;
+  }
+
+  // Date range
+  final startPart = dfShort.format(startDate);
+  final endPart = showYear
+      ? '${dfShort.format(endDate)} ${endDate.year}'
+      : dfShort.format(endDate);
+
+  return '$startPart - $endPart';
+}
+
+/// Returns a human-readable relative time string.
+///
+/// Example: `formatRelative(DateTime.now().subtract(Duration(minutes: 5)))`
+///          → `"Il y a 5 min"` (fr_FR)
+String formatRelative(DateTime date, {String locale = 'fr_FR'}) {
+  final now = DateTime.now();
+  final diff = now.difference(date);
+
+  if (diff.inSeconds < 60) return "À l'instant";
+  if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
+  if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
+  if (diff.inDays < 7) return 'Il y a ${diff.inDays} j';
+
+  return DateFormat('d MMM y', locale).format(date);
+}

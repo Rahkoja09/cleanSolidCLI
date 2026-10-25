@@ -1,0 +1,36 @@
+/// Truncates a long full name by abbreviating middle parts
+/// to their initial letter.
+///
+/// Example:
+///   `shortenName('Jean Pierre Rakotoarisoa', 20)` → "Jean Pierre R."
+///   `shortenName('Andry', 20)` → "Andry"
+String shortenName(String fullName, int maxLength) {
+  if (fullName.length <= maxLength) return fullName;
+
+  final parts = fullName.trim().split(RegExp(r'\s+'));
+  if (parts.length == 1) return fullName;
+
+  final buffer = StringBuffer(parts[0]);
+  for (int i = 1; i < parts.length; i++) {
+    final part = parts[i];
+    if (part.isEmpty) continue;
+    final candidate = '$buffer ${part[0]}.';
+    if (candidate.length > maxLength) {
+      buffer.write(' ${part[0]}.');
+    } else {
+      buffer.write(' $part');
+    }
+  }
+  return buffer.toString();
+}
+
+/// Returns the initials of a full name.
+///
+/// Example: `getInitials('Jean Pierre Rakoto')` → "JPR"
+String getInitials(String fullName) {
+  final parts = fullName.trim().split(RegExp(r'\s+'));
+  return parts
+      .where((p) => p.isNotEmpty)
+      .map((p) => p[0].toUpperCase())
+      .join();
+}

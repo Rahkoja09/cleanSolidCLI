@@ -29,16 +29,43 @@ class PubspecHelper {
 
   /// Add packages to `dependencies` section.
   /// Skips packages that already exist (by name).
+  /// Uses line-based insertion to preserve the original YAML formatting.
   static void addDependencies(String projectDir, Map<String, String> deps) {
     final path = '$projectDir/pubspec.yaml';
-    final data = _parse(path);
-    final depsMap = _getOrCreateMap(data, 'dependencies');
+    final file = File(path);
+    if (!file.existsSync()) return;
+
+    String content = file.readAsStringSync();
+    bool modified = false;
+
     for (final entry in deps.entries) {
-      if (!depsMap.containsKey(entry.key)) {
-        depsMap[entry.key] = entry.value;
+      final depLine = '  ${entry.key}: ${entry.value}';
+      // Verifie si la dependance existe deja (meme nom de cle)
+      if (content.contains(RegExp(r'^\s+' + RegExp.escape(entry.key) + r':\s', multiLine: true))) {
+        continue;
       }
+
+      // Trouver la section 'dependencies:' (pas 'dev_dependencies')
+      final depSectionRegex = RegExp(r'^(dependencies:\s*)$', multiLine: true);
+      final depMatch = depSectionRegex.firstMatch(content);
+      if (depMatch == null) continue;
+
+      // Trouver la prochaine section de niveau racine (non indente)
+      final afterDeps = content.substring(depMatch.end);
+      final nextSection = RegExp(r'^(?:dev_dependencies|flutter|\w):', multiLine: true)
+          .firstMatch(afterDeps);
+
+      final insertPos = depMatch.end + (nextSection?.start ?? afterDeps.length);
+      final buf = StringBuffer(content.substring(0, insertPos));
+      buf.writeln(depLine);
+      buf.write(content.substring(insertPos));
+      content = buf.toString();
+      modified = true;
     }
-    _write(path, data);
+
+    if (modified) {
+      file.writeAsStringSync(content);
+    }
   }
 
   /// Add packages to `dev_dependencies` section.

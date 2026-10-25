@@ -137,6 +137,18 @@ class AuthHelper {
     return content;
   }
 
+  /// Injecte tous les blocs conditionnels d'un module (social/email)
+  /// dans un fichier existant, en se basant sur les ancres qui precedent
+  /// chaque bloc dans le template.
+  ///
+  /// Exemple de structure dans le template :
+  ///   // {{social_controller_methods_anchor}}
+  ///   {{#if useSocial}}
+  ///     ...contenu...
+  ///   {{/if}}
+  ///     // {{social_controller_methods_anchor}}
+  ///
+  /// L'ancre exacte (texte integral) est preservee dans le fichier existant.
   static String _injectModule(
     String existingContent,
     String templateContent,
@@ -147,22 +159,57 @@ class AuthHelper {
 
     if (!templateContent.contains(startTag)) return existingContent;
 
-    int startIdx = templateContent.indexOf(startTag) + startTag.length;
-    int endIdx = templateContent.indexOf(endTag, startIdx);
-    String blockToInject = templateContent.substring(startIdx, endIdx).trim();
+    int searchFrom = 0;
 
-    if (existingContent.contains(blockToInject.split('\n').first.trim())) {
-      return existingContent;
-    }
+    while (true) {
+      // Trouver le prochain bloc conditionnel
+      final blockStart = templateContent.indexOf(startTag, searchFrom);
+      if (blockStart == -1) break;
 
-    final anchorName = variable == 'useEmail' ? 'email' : 'social';
-    final pattern = RegExp(r'// {{.*' + anchorName + r'.*anchor}}');
+      final contentStart = blockStart + startTag.length;
+      final blockEnd = templateContent.indexOf(endTag, contentStart);
+      if (blockEnd == -1) break;
 
-    if (existingContent.contains(pattern)) {
-      return existingContent.replaceFirst(
-        pattern,
-        '// {{$anchorName}_anchor}\n$blockToInject\n// {{$anchorName}_anchor}',
-      );
+      final blockContent = templateContent
+          .substring(contentStart, blockEnd)
+          .trim();
+
+      // Trouver l'ancre qui precede ce bloc (derniere ligne avant le startTag)
+      final textBefore = templateContent.substring(0, blockStart).trimRight();
+      final lastNewline = textBefore.lastIndexOf('\n');
+      final anchorLine = (lastNewline >= 0
+          ? textBefore.substring(lastNewline + 1)
+          : textBefore).trim();
+
+      // Verifier que c'est bien une ancre : // {{...}}
+      if (!RegExp(r'^//\s*\{\{.+\}\}$').hasMatch(anchorLine)) {
+        searchFrom = blockEnd + endTag.length;
+        continue;
+      }
+
+      // Dedup : verifier si la premiere ligne du bloc existe deja
+      final firstLine = blockContent.split('\n').first.trim();
+      if (existingContent.contains(firstLine)) {
+        searchFrom = blockEnd + endTag.length;
+        continue;
+      }
+
+      // Trouver cette ancre exacte dans le fichier existant et injecter apres
+      final escapedAnchor = RegExp.escape(anchorLine);
+      final anchorPattern = RegExp(escapedAnchor);
+
+      if (existingContent.contains(anchorPattern)) {
+        existingContent = existingContent.replaceFirst(
+          anchorPattern,
+          '$anchorLine\n$blockContent',
+        );
+      } else {
+        CliUI.warning(
+          'Ancre "$anchorLine" introuvable dans le fichier existant',
+        );
+      }
+
+      searchFrom = blockEnd + endTag.length;
     }
 
     return existingContent;

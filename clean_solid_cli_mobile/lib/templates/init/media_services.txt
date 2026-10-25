@@ -1,0 +1,38 @@
+import 'dart:io';
+
+/// Generic media service contract.
+///
+/// Backend-agnostic: picking, compression and thumbnail generation
+/// work without any storage backend. Upload/delete/getUrl depend
+/// on the chosen backend (Supabase, Firebase, …).
+abstract class MediaServices {
+  // ─── PICKING ───
+  Future<File?> pickImage({required bool fromGallery});
+  Future<List<File>> pickMultiImages();
+  Future<File?> pickVideo({required bool fromGallery});
+
+  // ─── PROCESSING ───
+  Future<File> compressImage(File file, {int quality = 80});
+  Future<File?> compressVideo(File file);
+  Future<File?> generateVideoThumbnail(dynamic videoFile);
+
+  /// Validates file size. Throws [ApiException] if too large.
+  void validateMediaSize(
+    File file, {
+    int maxImageSizeMB = 5,
+    int maxVideoSizeMB = 50,
+  });
+
+  // ─── STORAGE (backend-specific) ───
+  Future<String> uploadFile({
+    required File file,
+    required String bucket,
+    required String path,
+  });
+
+  String getPublicUrl(String filePath, String bucketName);
+  Future<void> deleteFile(String filePath, String bucketName);
+
+  // ─── CLEANUP ───
+  Future<void> clearCache();
+}

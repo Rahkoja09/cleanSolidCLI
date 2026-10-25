@@ -1,7 +1,10 @@
 import 'package:get_it/get_it.dart';
 import 'package:{{name}}/core/network/network_info.dart';
 {{#if supabase}}
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:{{name}}/core/services/media_services.dart';
+import 'package:{{name}}/core/services/media_services_impl.dart';
 {{/if}}
 // [IMPORT_ANCHOR]
 
@@ -12,6 +15,15 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl());
 {{#if supabase}}
   sl.registerLazySingleton(() => Supabase.instance.client);
+
+  // ─── MEDIA SERVICES (Supabase Storage) ───
+  sl.registerLazySingleton<MediaServices>(
+    () => MediaServiceImpl(
+      sl(),
+      sl(),
+      ImagePicker(),
+    ),
+  );
 {{/if}}
   // [INIT_ANCHOR]
 }

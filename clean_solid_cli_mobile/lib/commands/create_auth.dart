@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:clean_solid_cli_mobile/helpers/auth_helper.dart';
 import 'package:clean_solid_cli_mobile/helpers/injection_helper.dart';
@@ -5,6 +6,7 @@ import 'package:clean_solid_cli_mobile/helpers/error_listener_helper.dart';
 import 'package:clean_solid_cli_mobile/utils/cli_ui.dart';
 import 'package:clean_solid_cli_mobile/utils/state_manager.dart';
 import 'package:clean_solid_cli_mobile/utils/git_helper.dart';
+import 'package:clean_solid_cli_mobile/utils/pubspec_helper.dart';
 
 class CreateAuth extends Command {
   @override
@@ -75,6 +77,15 @@ class CreateAuth extends Command {
           social: useSocial,
           filesCreated: filesCreated,
         );
+      }
+
+      // Ajouter les dependances au pubspec si necessaire
+      final projectDir = Directory.current.path;
+      if (useSocial) {
+        PubspecHelper.addDependencies(projectDir, {
+          'google_sign_in': '^6.2.1',
+        });
+        CliUI.info('Dependance google_sign_in ajoutee au pubspec.yaml');
       }
 
       CliUI.success('Authentification configuree avec succes');

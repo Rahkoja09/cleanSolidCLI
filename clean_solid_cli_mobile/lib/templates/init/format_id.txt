@@ -1,0 +1,10 @@
+/// Shortens a long ID (e.g. a UUID) to its first [length]
+/// characters, uppercased.
+///
+/// Returns the full ID uppercased if it is shorter than [length].
+///
+/// Example: `shortenId('a1b2c3d4-e5f6-7890')` → `"A1B2C3D4"`
+String shortenId(String id, {int length = 8}) {
+  if (id.length <= length) return id.toUpperCase();
+  return id.substring(0, length).toUpperCase();
+}

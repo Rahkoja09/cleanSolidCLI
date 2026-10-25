@@ -1,0 +1,30 @@
+import 'package:intl/intl.dart';
+
+/// Formats a numeric value into a locale-aware string with
+/// thousand separators.
+///
+/// Example: `formatPrice(12500, locale: 'fr_FR')` → `"12 500"`
+String formatPrice(num input, {String locale = 'fr_FR'}) {
+  final formatter = NumberFormat('#,###', locale);
+  return formatter.format(input);
+}
+
+/// Accepts [int], [double], or [String] input and returns a
+/// formatted price string.
+String formatSmartPrice(dynamic input, {String locale = 'fr_FR'}) {
+  final formatter = NumberFormat('#,###', locale);
+
+  if (input is num) {
+    return formatter.format(input);
+  } else if (input is String) {
+    final cleaned = input.replaceAll(RegExp(r'[^0-9]'), '');
+    final value = num.tryParse(cleaned) ?? 0;
+    return formatter.format(value);
+  } else {
+    return '0';
+  }
+}
+
+/// Removes spaces from a formatted price string so it can be
+/// parsed back to a number.
+String removePriceSpaces(String input) => input.replaceAll(' ', '');
